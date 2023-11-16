@@ -1,6 +1,38 @@
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
+#define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
+LOG_MODULE_REGISTER(main);
+
+#define TEST_THREAD_STACKSIZE 2048
+#define TEST_THREAD_PRIORITY  3
+
+k_tid_t testThread_pid;
+struct k_thread testThread_data;
+
+struct k_thread_runtime_stats thread_stats;
+
+K_THREAD_STACK_DEFINE(test_thread_stack_area, TEST_THREAD_STACKSIZE);
+
+void test_thread(void *p1, void *p2, void *p3)
+{
+
+    while (1)
+    {
+        k_sleep(K_SECONDS(1));
+        k_thread_runtime_stats_get(k_current_get(), &thread_stats);
+        LOG_INF("1 second has passed!!!");
+        LOG_INF("Number of cycle: %llu", thread_stats.execution_cycles);
+    }
+}
 
 int main(void)
 {
+    testThread_pid =
+        k_thread_create(&testThread_data, test_thread_stack_area, K_THREAD_STACK_SIZEOF(test_thread_stack_area),
+                        test_thread, NULL, NULL, NULL, TEST_THREAD_PRIORITY, K_ESSENTIAL, K_NO_WAIT);
+
+    k_sleep(K_FOREVER);
+
     return 0;
 }

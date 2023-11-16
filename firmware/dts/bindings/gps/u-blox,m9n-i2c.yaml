@@ -1,0 +1,3 @@
+compatible: "u-blox,m9n"
+
+include: ["i2c-device.yaml", "u-blox,m9n.yaml"]

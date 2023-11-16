@@ -1,0 +1,21 @@
+description: ublox NEO-M9N GNSS module
+
+compatible: "u-blox,m9n"
+
+properties:
+  int-gpio:
+    type: phandle
+    description: Interrupt pin
+
+  output-rate:
+    type: int
+    description: |
+      Default GNSS solutions output rate in Hz. Following values are allowed:
+        10
+        25
+    default: 10
+    enum:
+      - 10
+      - 25
+
+  #TODO
