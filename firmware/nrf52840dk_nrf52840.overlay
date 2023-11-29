@@ -1,4 +1,4 @@
-arduino_serial: &uart1 {
+&uart1 {
 	status = "okay";
 	current-speed = <38400>;
 

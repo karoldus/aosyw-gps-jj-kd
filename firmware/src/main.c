@@ -1,6 +1,8 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include "../drivers/gps-driver/include/testowy.h"
+
 #define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
 LOG_MODULE_REGISTER(main);
 
@@ -28,6 +30,7 @@ void test_thread(void *p1, void *p2, void *p3)
 
 int main(void)
 {
+    test_func();
     testThread_pid =
         k_thread_create(&testThread_data, test_thread_stack_area, K_THREAD_STACK_SIZEOF(test_thread_stack_area),
                         test_thread, NULL, NULL, NULL, TEST_THREAD_PRIORITY, K_ESSENTIAL, K_NO_WAIT);
