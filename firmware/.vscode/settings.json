@@ -1,5 +1,6 @@
 {
   "files.associations": {
-    "testowy.h": "c"
+    "testowy.h": "c",
+    "log.h": "c"
   }
 }
