@@ -1,5 +1,8 @@
 zephyr_library_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/testowy.h)
 zephyr_library_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/neo-m9n.h)
+zephyr_library_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/gps-driver-context.h)
+zephyr_library_include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include/gps-driver.h)
 target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/testowy.c)
 target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/neo-m9n.c)
 target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/neo-m9n_uart.c)
+target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/gps-driver.c)

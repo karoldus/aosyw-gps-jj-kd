@@ -165,7 +165,27 @@ void gps_init_test()
 
     k_sleep(K_MSEC(100));
 
-    ret = uart_tx(uart, gps_config_1Hz, sizeof(gps_config_1Hz), SYS_FOREVER_US);
+    // added
+    ret = uart_rx_enable(uart, rx_buff, sizeof(rx_buff), GPS_UART_RX_TIMEOUT);
+    if (ret)
+    {
+        LOG_ERR("Error while enabling RX");
+        return;
+    }
+    k_sleep(K_MSEC(100));
+
+    // ret = uart_tx(uart, gps_config_1Hz, sizeof(gps_config_1Hz), SYS_FOREVER_US);
+    // if (ret)
+    // {
+    //     LOG_ERR("Error while sending config");
+    //     return;
+    // }
+
+    // k_sleep(K_MSEC(500));
+
+    LOG_ERR("GPS send new");
+
+    ret = uart_tx(uart, gps_new_config_25Hz, sizeof(gps_new_config_25Hz), SYS_FOREVER_US);
     if (ret)
     {
         LOG_ERR("Error while sending config");
@@ -173,13 +193,6 @@ void gps_init_test()
     }
 
     k_sleep(K_MSEC(100));
-
-    ret = uart_rx_enable(uart, rx_buff, sizeof(rx_buff), GPS_UART_RX_TIMEOUT);
-    if (ret)
-    {
-        LOG_ERR("Error while enabling RX");
-        return;
-    }
 }
 
 GPSData_t gps_get_test()
