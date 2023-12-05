@@ -11,6 +11,100 @@ typedef enum
     GPS_ERROR_UNKNOWN = -5,
 } gps_error_t;
 
+typedef enum
+{
+    GPS_MEMORY_SET_LAYER_RAM = 0b00000001,
+    GPS_MEMORY_SET_LAYER_BBR = 0b00000010,
+    GPS_MEMORY_SET_LAYER_FLASH = 0b00000100,
+    GPS_MEMOTY_SET_LAYER_MAX = 0b00000111
+} gps_memory_set_layer_t;
+
+typedef enum
+{
+    GPS_MEMORY_GET_LAYER_RAM = 0,
+    GPS_MEMORY_GET_LAYER_BBR = 1,
+    GPS_MEMORY_GET_LAYER_FLASH = 2,
+    GPS_MEMOTY_GET_LAYER_DEFAULT = 7
+} gps_memory_get_layer_t;
+
+typedef struct
+{
+    uint32_t key;
+    union
+    {
+        uint8_t u1;
+        uint16_t u2;
+        uint32_t u4;
+        uint64_t u8;
+        int8_t i1;
+        int16_t i2;
+        int32_t i4;
+        int64_t i8;
+        float r4;
+        double r8;
+        uint8_t e1;
+        uint16_t e2;
+        uint32_t e4;
+        uint8_t x1;
+        uint16_t x2;
+        uint32_t x4;
+        uint64_t x8;
+        uint8_t l;
+    } value; // TODO muszą być little-endian. Jak to sprawdzić? Może #define?
+
+} gps_config_item_t;
+
+#define MAX_CONFIG_ITEMS     (64U)
+#define MAX_CONFIG_ITEM_SIZE (12U)
+
 //============== CONFIGURATION API ==============
+
+// GENERAL CONFIGURATION
+
+/**
+ * @brief Set the configuration manually based on the GPS documentation.
+ * Useful for options not supported by this library.
+ * List of configs: section 5.8 of
+ * https://content.u-blox.com/sites/default/files/u-blox-M9-SPG-4.04_InterfaceDescription_UBX-21022436.pdf
+ *
+ * @param layer Layer to write the configuration to, can be more than one layer.
+ * @param config
+ * @param config_len number of config items, 0 < config_len <= MAX_CONFIG_ITEMS
+ * @return gps_error_t
+ */
+gps_error_t gps_set_config(gps_memory_set_layer_t layer, gps_config_item_t config[], uint8_t config_len);
+
+/**
+ * @brief Get configuration manually based on the GPS documentation.
+ * List of configs: section 5.8 of
+ * https://content.u-blox.com/sites/default/files/u-blox-M9-SPG-4.04_InterfaceDescription_UBX-21022436.pdf
+ *
+ * @param layer Layer to read the configuration from. Only one layer can be read at a time.
+ * @param keys
+ * @param keys_len
+ * @return gps_error_t
+ */
+gps_error_t gps_get_config(gps_memory_get_layer_t layer, uint32_t keys[], uint8_t keys_len);
+
+/**
+ * @brief Delete configuration manually based on the GPS documentation.
+ * List of configs: section 5.8 of
+ * https://content.u-blox.com/sites/default/files/u-blox-M9-SPG-4.04_InterfaceDescription_UBX-21022436.pdf
+ *
+ * @param layer Layer to delete the configuration from, can be more than one layer.
+ * @param keys
+ * @param keys_len
+ * @return gps_error_t
+ */
+gps_error_t gps_del_config(gps_memory_set_layer_t layer, uint32_t keys[], uint8_t keys_len);
+
+// SPECIFIC CONFIGURATION
+
+/**
+ * @brief Set the navigation rate of the GPS module.
+ * @param rate_hz
+ * @return gps_error_t
+ */
+// gps_error_t gps_set_nav_rate(uint16_t rate_hz);
 
 #endif // GPS_DRIVER_H_
