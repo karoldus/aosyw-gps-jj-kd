@@ -9,6 +9,17 @@
 #define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
 LOG_MODULE_REGISTER(gps_driver);
 
+#define _GET_NUMBER_OF_BYTES(key)                                                                                      \
+    do                                                                                                                 \
+    {                                                                                                                  \
+        number_of_bytes = (((key) & (0x7 << 28)) >> 28);                                                               \
+        number_of_bytes = (number_of_bytes == 0x01 || number_of_bytes == 0x02) ? 1                                     \
+                          : (number_of_bytes == 0x03)                          ? 2                                     \
+                          : (number_of_bytes == 0x04)                          ? 4                                     \
+                          : (number_of_bytes == 0x05)                          ? 8                                     \
+                                                                               : 0;                                                             \
+    } while (0)
+
 static gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_item, uint8_t *out_payload,
                                                       uint16_t *out_payload_len)
 {
@@ -18,31 +29,12 @@ static gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_
     }
 
     uint32_t key = config_item->key;
-    uint8_t number_of_bytes = ((key & (0x7 << 28)) >> 28); // TODO MACRO
-
-    switch (number_of_bytes)
+    uint8_t number_of_bytes = 0;
+    _GET_NUMBER_OF_BYTES(key);
+    if (number_of_bytes == 0)
     {
-    case 0x01:
-    case 0x02:
-        number_of_bytes = 1;
-        break;
-
-    case 0x03:
-        number_of_bytes = 2;
-        break;
-
-    case 0x04:
-        number_of_bytes = 4;
-        break;
-
-    case 0x05:
-        number_of_bytes = 8;
-        break;
-
-    default:
-        LOG_ERR("Wrong number of bytes in config item");
+        LOG_ERR("Wrong key in config item - cannot get number of bytes");
         return GPS_ERROR_WRONG_PARAM;
-        break;
     }
 
     // TODO: big/little endian ?
