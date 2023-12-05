@@ -28,6 +28,27 @@ static const uint8_t gps_new_config_25Hz[] = {0xB5, 0x62,
                                               0x28, 0x00 /*value end*/,
                                               0x1B, 0x77};
 
+static const uint8_t gps_new_config_2Hz[] = {0xB5, 0x62,
+                                             0x06, 0x8A,
+                                             0x0A, 0x00 /*len end*/,
+                                             0x00, 0x07, // RAM
+                                             0x00, 0x00 /*payload base end*/,
+                                             0x01, 0x00,
+                                             0x21, 0x30 /*key end*/,
+                                             0xF4, 0x01 /*value end*/,
+                                             0xE8, 0x10};
+
+static const uint8_t gps_new_get_rate[] = {0xB5, 0x62,
+                                           0x06, 0x8B,
+                                           0x08, 0x00 /*len end*/,
+                                           0x00, 0x01, // BBR
+                                           0x00, 0x00 /*payload base end*/,
+                                           0x01, 0x00,
+                                           0x21, 0x30 /*key end*/,
+                                           0xEC, 0x0E};
+
+// returned: b562 068b 0a00 01010000 01002130 f401 + checksum
+
 static const uint8_t gps_config_GLL_off[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0xF0, 0x01,
                                              0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x2A};
 

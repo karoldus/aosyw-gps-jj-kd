@@ -184,13 +184,21 @@ void gps_init_test()
 
     LOG_ERR("GPS send new");
 
-    ret = uart_tx(uart, gps_new_config_25Hz, sizeof(gps_new_config_25Hz), SYS_FOREVER_US);
+    ret = uart_tx(uart, gps_new_config_2Hz, sizeof(gps_new_config_2Hz), SYS_FOREVER_US);
     if (ret)
     {
         LOG_ERR("Error while sending config");
         return;
     }
 
+    k_sleep(K_MSEC(100));
+
+    ret = uart_tx(uart, gps_new_get_rate, sizeof(gps_new_get_rate), SYS_FOREVER_US);
+    if (ret)
+    {
+        LOG_ERR("Error while sending config GET");
+        return;
+    }
     k_sleep(K_MSEC(100));
 }
 
