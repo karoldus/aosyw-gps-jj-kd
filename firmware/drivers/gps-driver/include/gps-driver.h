@@ -1,6 +1,9 @@
 #ifndef GPS_DRIVER_H_
 #define GPS_DRIVER_H_
 
+#include "inttypes.h"
+#include "ubx-cfg-defines.h"
+
 typedef enum
 { // TODO: add more error codes
     GPS_OK = 0,
@@ -10,22 +13,6 @@ typedef enum
     GPS_ERROR_PAYLOAD = -4,
     GPS_ERROR_UNKNOWN = -5,
 } gps_error_t;
-
-typedef enum
-{
-    GPS_MEMORY_SET_LAYER_RAM = 0b00000001,
-    GPS_MEMORY_SET_LAYER_BBR = 0b00000010,
-    GPS_MEMORY_SET_LAYER_FLASH = 0b00000100,
-    GPS_MEMOTY_SET_LAYER_MAX = 0b00000111
-} gps_memory_set_layer_t;
-
-typedef enum
-{
-    GPS_MEMORY_GET_LAYER_RAM = 0,
-    GPS_MEMORY_GET_LAYER_BBR = 1,
-    GPS_MEMORY_GET_LAYER_FLASH = 2,
-    GPS_MEMOTY_GET_LAYER_DEFAULT = 7
-} gps_memory_get_layer_t;
 
 typedef struct
 {
@@ -72,7 +59,7 @@ typedef struct
  * @param config_len number of config items, 0 < config_len <= MAX_CONFIG_ITEMS
  * @return gps_error_t
  */
-gps_error_t gps_set_config(gps_memory_set_layer_t layer, gps_config_item_t config[], uint8_t config_len);
+gps_error_t gps_set_config(ubx_cfg_memory_set_del_layer_t layer, gps_config_item_t config[], uint8_t config_len);
 
 /**
  * @brief Get configuration manually based on the GPS documentation.
@@ -84,7 +71,7 @@ gps_error_t gps_set_config(gps_memory_set_layer_t layer, gps_config_item_t confi
  * @param keys_len
  * @return gps_error_t
  */
-gps_error_t gps_get_config(gps_memory_get_layer_t layer, uint32_t keys[], uint8_t keys_len);
+gps_error_t gps_get_config(ubx_cfg_memory_get_layer_t layer, uint32_t keys[], uint8_t keys_len);
 
 /**
  * @brief Delete configuration manually based on the GPS documentation.
@@ -96,7 +83,7 @@ gps_error_t gps_get_config(gps_memory_get_layer_t layer, uint32_t keys[], uint8_
  * @param keys_len
  * @return gps_error_t
  */
-gps_error_t gps_del_config(gps_memory_set_layer_t layer, uint32_t keys[], uint8_t keys_len);
+gps_error_t gps_del_config(ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[], uint8_t keys_len);
 
 // SPECIFIC CONFIGURATION
 
