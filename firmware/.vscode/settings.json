@@ -1,6 +1,11 @@
 {
   "files.associations": {
     "testowy.h": "c",
-    "log.h": "c"
+    "log.h": "c",
+    "neo-m9n.h": "c",
+    "devicetree.h": "c",
+    "i2c.h": "c",
+    "uart.h": "c",
+    "kernel.h": "c"
   }
 }
