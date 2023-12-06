@@ -88,10 +88,16 @@ gps_error_t gps_del_config(ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[]
 // SPECIFIC CONFIGURATION
 
 /**
- * @brief Set the navigation rate of the GPS module.
- * @param rate_hz
+ * @brief Set GPS rate configuration.
+ *
+ * @param nominal_time_ms Nominal time between GNSS measurements. The minimum value is 25. 0 to left unchanged.
+ * @param ratio Ratio of number of measurements to number of navigation solutions. E.g. 5 means five measurements for
+ * every navigation solution. The minimum value is 1. The maximum value is 127. 0 to left unchanged.
+ * @param time_system Time system to which measurements are aligned. UBX_CFG_TYPES_TIME_SYSTEM_NONE to left unchanged.
+ * @param layer Layer to write the configuration to, can be more than one layer.
  * @return gps_error_t
  */
-// gps_error_t gps_set_nav_rate(uint16_t rate_hz);
+gps_error_t gps_set_cfg_rate(uint16_t nominal_time_ms, uint16_t ratio, ubxCfgTimeSystem_t time_system,
+                             ubx_cfg_memory_set_del_layer_t layer);
 
 #endif // GPS_DRIVER_H_
