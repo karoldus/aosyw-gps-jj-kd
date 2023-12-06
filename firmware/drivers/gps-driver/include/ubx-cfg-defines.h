@@ -29,19 +29,183 @@ typedef enum
     GPS_MEMOTY_GET_LAYER_DEFAULT = 7
 } ubx_cfg_memory_get_layer_t;
 
-//============================ CONFIG KEYS =====================================
+//============================ ENUMS ===========================================
 
+// // from https://github.com/u-blox/ubxlib/blob/master/gnss/api/u_gnss_type.h
+
+/** The types of transport that the GNSS API can support.
+ */
+// lint -estring(788, ubxCfgTransportType_t::UBX_CFG_TYPES_TRANSPORT_NONE)
+//   Suppress not used within defaulted switch
+// lint -estring(788, ubxCfgTransportType_t::UBX_CFG_TYPES_TRANSPORT_MAX_NUM)
+//   Suppress not used within defaulted switch
 typedef enum
 {
-    UBX_CFG_RATE_TIMREF_UTC = 0,  // Align measurements to UTC time
-    UBX_CFG_RATE_TIMREF_GPS = 1,  // Align measurements to GPS time
-    UBX_CFG_RATE_TIMREF_GLO = 2,  // Align measurements to GLONASS time
-    UBX_CFG_RATE_TIMREF_BDS = 3,  // Align measurements to BeiDou time
-    UBX_CFG_RATE_TIMREF_GAL = 4,  // Align measurements to Galileo time
-    UBX_CFG_RATE_TIMREF_NAVIC = 5 // Align measurements to NavIC time
-} ubx_cfg_rate_timeref_t;
+    UBX_CFG_TYPES_TRANSPORT_NONE,
+    UBX_CFG_TYPES_TRANSPORT_UART,           /**< the transport handle should be a UART handle;
+                                          see also #UBX_CFG_TYPES_TRANSPORT_UART_1 and
+                                          #UBX_CFG_TYPES_TRANSPORT_UART_2. */
+    UBX_CFG_TYPES_TRANSPORT_AT,             /**< the transport handle should be an AT client
+                                          handle; currently only UBX-format messages may
+                                          be received when this transport type is in use.
+                                          It is better to enable CMUX on the cellular
+                                          module with uCellMuxEnable() and then open
+                                          a virtual serial port to the GNSS device with
+                                          uCellMuxAddChannel(), then any GNSS message
+                                          format may be used and position will be streamed. */
+    UBX_CFG_TYPES_TRANSPORT_I2C,            /**< the transport handle should be an I2C handle. */
+    UBX_CFG_TYPES_TRANSPORT_SPI,            /**< the transport handle should be an SPI handle. */
+    UBX_CFG_TYPES_TRANSPORT_VIRTUAL_SERIAL, /**< the transport handle should be a virtual serial,
+                                          port handle, for example as returned by
+                                          uCellMuxAddChannel() if you are talking to
+                                          a GNSS device either inside or connected
+                                          via a cellular module. */
+    UBX_CFG_TYPES_TRANSPORT_UART_2,         /**< the transport handle should be a UART handle;
+                                          use this if your GNSS chip has two UART ports
+                                          and you are connected to the second one. */
+    UBX_CFG_TYPES_TRANSPORT_MAX_NUM,
+    UBX_CFG_TYPES_TRANSPORT_UART_1 = UBX_CFG_TYPES_TRANSPORT_UART /**< the transport handle should
+                                                         be a UART handle; equivalent
+                                                         to #UBX_CFG_TYPES_TRANSPORT_UART
+                                                         but you may wish to use this
+                                                         value if your GNSS chip has
+                                                         two UART ports and you want
+                                                         to distinguish between the
+                                                         two in your code. */
+} ubxCfgTransportType_t;
 
-// From https://github.com/u-blox/ubxlib/blob/master/gnss/api/u_gnss_cfg_val_key.h
+/** The handle for the transport with types implied by
+ * ubxCfgTransportType_t.
+ */
+typedef union
+{
+    void *pAt;           /**< for transport type #UBX_CFG_TYPES_TRANSPORT_AT. */
+    int32_t uart;        /**< for transport types #UBX_CFG_TYPES_TRANSPORT_UART, #UBX_CFG_TYPES_TRANSPORT_UART_1 and
+                            #UBX_CFG_TYPES_TRANSPORT_UART_2). */
+    int32_t i2c;         /**< for transport type #UBX_CFG_TYPES_TRANSPORT_I2C. */
+    int32_t spi;         /**< for transport type #UBX_CFG_TYPES_TRANSPORT_SPI. */
+    void *pDeviceSerial; /**< for transport type #UBX_CFG_TYPES_TRANSPORT_VIRTUAL_SERIAL. */
+} ubxCfgTransportHandle_t;
+
+/** The port type on the GNSS chip itself; this is different
+ * from the ubxCfgTransportType_t since, for instance, a USB port
+ * on the MCU might be connected to a UART port on the GNSS chip,
+ * and some GNSS chips have two UART ports which need to be
+ * identified separately; effectively this is the GNSS chip's own
+ * internal port ID, which needs to be used in some messages
+ * (for example those querying the communications state).
+ */
+typedef enum
+{
+    UBX_CFG_TYPES_PORT_I2C = 0,
+    UBX_CFG_TYPES_PORT_UART = 1,
+    UBX_CFG_TYPES_PORT_UART1 = 1,
+    UBX_CFG_TYPES_PORT_UART2 = 2,
+    UBX_CFG_TYPES_PORT_USB = 3,
+    UBX_CFG_TYPES_PORT_SPI = 4,
+    UBX_CFG_TYPES_PORT_MAX_NUM
+} ubxCfgPort_t;
+
+/** The protocol types for exchanges with a GNSS chip.
+ */
+typedef enum
+{
+    UBX_CFG_TYPES_PROTOCOL_UBX = 0,  // Value chosen to match encoded version for the GNSS chip
+    UBX_CFG_TYPES_PROTOCOL_NMEA = 1, // Value chosen to match encoded version for the GNSS chip
+    UBX_CFG_TYPES_PROTOCOL_RTCM = 2,
+    UBX_CFG_TYPES_PROTOCOL_UNKNOWN = 3, // Must have this value as it is used to mark
+    UBX_CFG_TYPES_PROTOCOL_MAX_NUM,     // the end of the known output protocols
+    UBX_CFG_TYPES_PROTOCOL_NONE,
+    UBX_CFG_TYPES_PROTOCOL_ALL,
+    UBX_CFG_TYPES_PROTOCOL_ANY
+} ubxCfgProtocol_t;
+
+/** The types of dynamic platform model; not all types are available on all modules.
+ * If you add a new model here, please also add it to UBX_CFG_TYPES_fence.c.
+ */
+typedef enum
+{
+    UBX_CFG_TYPES_DYNAMIC_PORTABLE = 0,
+    UBX_CFG_TYPES_DYNAMIC_STATIONARY = 2,
+    UBX_CFG_TYPES_DYNAMIC_PEDESTRIAN = 3,
+    UBX_CFG_TYPES_DYNAMIC_AUTOMOTIVE = 4,
+    UBX_CFG_TYPES_DYNAMIC_SEA = 5,
+    UBX_CFG_TYPES_DYNAMIC_AIRBORNE_1G = 6,
+    UBX_CFG_TYPES_DYNAMIC_AIRBORNE_2G = 7,
+    UBX_CFG_TYPES_DYNAMIC_AIRBORNE_4G = 8,
+    UBX_CFG_TYPES_DYNAMIC_WRIST = 9,
+    UBX_CFG_TYPES_DYNAMIC_BIKE = 10,
+    UBX_CFG_TYPES_DYNAMIC_MOWER = 11,
+    UBX_CFG_TYPES_DYNAMIC_ESCOOTER = 12
+} ubxCfgDynamic_t;
+
+/** The fix modes.
+ */
+typedef enum
+{
+    UBX_CFG_TYPES_FIX_MODE_2D = 1,
+    UBX_CFG_TYPES_FIX_MODE_3D = 2,
+    UBX_CFG_TYPES_FIX_MODE_AUTO = 3
+} ubxCfgFixMode_t;
+
+/** The possible GNSS UTC standards; not all types are available on all modules.
+ */
+typedef enum
+{
+    UBX_CFG_TYPES_UTC_STANDARD_AUTOMATIC = 0, /**< automatic. */
+    UBX_CFG_TYPES_UTC_STANDARD_USNO = 3,      /**< derived from GPS. */
+    UBX_CFG_TYPES_UTC_STANDARD_GALILEO = 5,
+    UBX_CFG_TYPES_UTC_STANDARD_GLONASS = 6,
+    UBX_CFG_TYPES_UTC_STANDARD_NTSC = 7, /**< National Time Service Center (NTSC), China; derived from BeiDou time. */
+    UBX_CFG_TYPES_UTC_STANDARD_NPLI = 8, /**< National Physics Laboratory India. */
+    UBX_CFG_TYPES_UTC_STANDARD_NICT = 9  /**< National Institute of Information and Communications Technology, Japan;
+                                       derived from QZSS time. */
+} ubxCfgUtcStandard_t;
+
+/** The possible time systems; not all time systems are supported by all modules.
+ */
+typedef enum
+{
+    UBX_CFG_TYPES_TIME_SYSTEM_NONE = -1,
+    UBX_CFG_TYPES_TIME_SYSTEM_UTC = 0,
+    UBX_CFG_TYPES_TIME_SYSTEM_GPS = 1,
+    UBX_CFG_TYPES_TIME_SYSTEM_GLONASS = 2,
+    UBX_CFG_TYPES_TIME_SYSTEM_BEIDOU = 3,
+    UBX_CFG_TYPES_TIME_SYSTEM_GALILEO = 4,
+    UBX_CFG_TYPES_TIME_SYSTEM_NAVIC = 5
+} ubxCfgTimeSystem_t;
+
+/** The possible modes for RRLP capture; modes beyond
+ * UBX_CFG_TYPES_RRLP_MODE_MEASX are only supported on M10 modules or later.
+ * For guidance on how these modes may be used, see:
+ * https://developer.thingstream.io/guides/location-services/cloudlocate-getting-started
+ */
+typedef enum
+{
+    UBX_CFG_TYPES_RRLP_MODE_MEASX = 0,
+    UBX_CFG_TYPES_RRLP_MODE_MEAS50 = 1,
+    UBX_CFG_TYPES_RRLP_MODE_MEAS20 = 2,
+    UBX_CFG_TYPES_RRLP_MODE_MEASC12 = 3,
+    UBX_CFG_TYPES_RRLP_MODE_MEASD12 = 4
+} ubxCfgRrlpMode_t;
+
+/** The possible GNSS systems; not all GNSS systems are supported by all modules.
+ */
+typedef enum
+{
+    UBX_CFG_TYPES_SYSTEM_NONE = -1,
+    UBX_CFG_TYPES_SYSTEM_GPS = 0,
+    UBX_CFG_TYPES_SYSTEM_SBAS = 1,
+    UBX_CFG_TYPES_SYSTEM_GALILEO = 2,
+    UBX_CFG_TYPES_SYSTEM_BEIDOU = 3,
+    UBX_CFG_TYPES_SYSTEM_IMES = 4,
+    UBX_CFG_TYPES_SYSTEM_QZSS = 5,
+    UBX_CFG_TYPES_SYSTEM_GLONASS = 6
+} ubxCfgSystem_t;
+
+//============================ CONFIG KEYS =====================================
+
+// From // From https://github.com/u-blox/ubxlib/blob/master/gnss/api/u_gnss_cfg_val_key.h
 
 #define UBX_CFG_KEY_ID_ANA_USE_ANA_L                      0x10230001
 #define UBX_CFG_KEY_ID_ANA_ORBMAXERR_U2                   0x30230002
