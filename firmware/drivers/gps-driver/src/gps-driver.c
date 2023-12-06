@@ -20,6 +20,15 @@ LOG_MODULE_REGISTER(gps_driver);
                                                                                : 0;                                                             \
     } while (0)
 
+//================================= STATIC FUNCTIONS ==================================
+
+static uint8_t _is_little_endian()
+{
+    int32_t x = 1;
+
+    return (*((char *)(&x)) == 1);
+}
+
 static gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_item, uint8_t *out_payload,
                                                       uint16_t *out_payload_len)
 {
@@ -45,6 +54,8 @@ static gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_
 
     return GPS_OK;
 }
+
+//=============================== GLOBAL FUNCTIONS =========================
 
 gps_error_t gps_set_config(ubx_cfg_memory_set_del_layer_t layers, gps_config_item_t config[], uint8_t config_len)
 {
@@ -203,3 +214,39 @@ gps_error_t gps_del_config(ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[]
 }
 
 //============================== SPECIFIC CONFIGURATION ==============================
+
+gps_error_t gps_set_cfg_rate(uint16_t nominal_time_ms, uint16_t ratio, ubxCfgTimeSystem_t time_system,
+                             ubx_cfg_memory_set_del_layer_t layer)
+{
+    gps_config_item_t items[3];
+    uint8_t items_len = 0;
+
+    if (nominal_time_ms != 0)
+    {
+        items[items_len].key = UBX_CFG_KEY_ID_RATE_MEAS_U2;
+        items[items_len].value.u2 = nominal_time_ms;
+        items_len++;
+    }
+
+    if (ratio != 0)
+    {
+        items[items_len].key = UBX_CFG_KEY_ID_RATE_NAV_U2;
+        items[items_len].value.u2 = ratio;
+        items_len++;
+    }
+
+    if (time_system != UBX_CFG_TYPES_TIME_SYSTEM_NONE)
+    {
+        items[items_len].key = UBX_CFG_KEY_ID_RATE_TIMEREF_E1;
+        items[items_len].value.e1 = time_system;
+        items_len++;
+    }
+
+    if (items_len == 0)
+    {
+        return GPS_ERROR_WRONG_PARAM;
+    }
+
+    return gps_set_config(layer, items, items_len);
+}
+
