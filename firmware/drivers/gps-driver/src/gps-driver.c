@@ -1,6 +1,6 @@
 #include "../include/gps-driver.h"
 #include "../include/gps-driver-context.h"
-#include "../include/ubx-defines.h"
+#include "../include/ubx-cfg-defines.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +46,7 @@ static gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_
     return GPS_OK;
 }
 
-gps_error_t gps_set_config(gps_memory_set_layer_t layers, gps_config_item_t config[], uint8_t config_len)
+gps_error_t gps_set_config(ubx_cfg_memory_set_del_layer_t layers, gps_config_item_t config[], uint8_t config_len)
 {
     if (config_len == 0 || config_len > MAX_CONFIG_ITEMS || config == NULL || layers == 0)
     {
@@ -100,7 +100,7 @@ gps_error_t gps_set_config(gps_memory_set_layer_t layers, gps_config_item_t conf
     return GPS_OK;
 }
 
-gps_error_t gps_get_config(gps_memory_get_layer_t layer, uint32_t keys[], uint8_t keys_len)
+gps_error_t gps_get_config(ubx_cfg_memory_get_layer_t layer, uint32_t keys[], uint8_t keys_len)
 {
     if (keys_len == 0 || keys_len > MAX_CONFIG_ITEMS || keys == NULL)
     {
@@ -150,7 +150,7 @@ gps_error_t gps_get_config(gps_memory_get_layer_t layer, uint32_t keys[], uint8_
     return GPS_OK;
 }
 
-gps_error_t gps_del_config(gps_memory_set_layer_t layer, uint32_t keys[], uint8_t keys_len)
+gps_error_t gps_del_config(ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[], uint8_t keys_len)
 {
     if (keys_len == 0 || keys_len > MAX_CONFIG_ITEMS || keys == NULL)
     {
