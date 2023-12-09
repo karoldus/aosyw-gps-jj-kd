@@ -11,6 +11,8 @@
 #define NEO_M9N_BUS_UART DT_ANY_INST_ON_BUS_STATUS_OKAY(uart)
 #define NEO_M9N_BUS_I2C  DT_ANY_INST_ON_BUS_STATUS_OKAY(i2c)
 
+// #undef DT_DRV_COMPAT
+
 struct neo_m9n_bus
 {
 #if NEO_M9N_BUS_UART
@@ -28,11 +30,13 @@ struct neo_m9n_data
 
 struct neo_m9n_config
 {
-    const struct device *uart;
+    const struct neo_m9n_bus bus;
 };
 
+void test_api_func(void);
+
 typedef struct neo_m9n_api
-{
+{   
 };
 
 void print_dbg(void);

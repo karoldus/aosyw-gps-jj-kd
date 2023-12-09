@@ -1,5 +1,7 @@
 description: ublox NEO-M9N GNSS module
 
+compatible: "u-blox,m9n"
+
 properties:
   int-gpio:
     type: phandle

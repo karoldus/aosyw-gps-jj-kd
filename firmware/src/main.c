@@ -21,19 +21,20 @@ char str[GPS_UART_BUF_SIZE * 4];
 
 K_THREAD_STACK_DEFINE(test_thread_stack_area, TEST_THREAD_STACKSIZE);
 
+
 void test_thread(void *p1, void *p2, void *p3)
 {
 
     while (1)
     {
-        // gps_data = gps_get_test();
-        // for (int i = 0; i < GPS_UART_BUF_SIZE; i++)
-        // {
-        //     sprintf(&str[i * 2], "%02x", gps_data.rx_buff_gpsGet[i]);
-        // }
-        // str[200] = '\0';
-        // LOG_INF("GPS data: %s", str);
-        // memset(str, '\0', GPS_UART_BUF_SIZE * 4);
+        gps_data = gps_get_test();
+        for (int i = 0; i < GPS_UART_BUF_SIZE; i++)
+        {
+            sprintf(&str[i * 2], "%02x", gps_data.rx_buff_gpsGet[i]);
+        }
+        str[200] = '\0';
+        LOG_INF("GPS data: %s", str);
+        memset(str, '\0', GPS_UART_BUF_SIZE * 4);
     }
 }
 
@@ -43,9 +44,9 @@ int main(void)
 
     print_dbg();
 
-    testThread_pid =
-        k_thread_create(&testThread_data, test_thread_stack_area, K_THREAD_STACK_SIZEOF(test_thread_stack_area),
-                        test_thread, NULL, NULL, NULL, TEST_THREAD_PRIORITY, K_ESSENTIAL, K_NO_WAIT);
+    // testThread_pid =
+    //     k_thread_create(&testThread_data, test_thread_stack_area, K_THREAD_STACK_SIZEOF(test_thread_stack_area),
+    //                     test_thread, NULL, NULL, NULL, TEST_THREAD_PRIORITY, K_ESSENTIAL, K_NO_WAIT);
 
     k_sleep(K_FOREVER);
 

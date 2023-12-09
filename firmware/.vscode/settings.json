@@ -6,6 +6,8 @@
     "devicetree.h": "c",
     "i2c.h": "c",
     "uart.h": "c",
-    "kernel.h": "c"
+    "kernel.h": "c",
+    "random": "c",
+    "typeinfo": "c"
   }
 }

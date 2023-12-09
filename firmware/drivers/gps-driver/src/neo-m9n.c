@@ -5,6 +5,8 @@ LOG_MODULE_REGISTER(M9N);
 
 static struct neo_m9n_api api;
 
+#define DEFAULT_ODR DT_PROP(DT_ALIAS(neo_m9n), output_rate)
+
 #ifdef CONFIG_PM_DEVICE
 static int pm_action(const struct device *dev, enum pm_device_action action)
 {
@@ -45,25 +47,25 @@ static int neo_m9n_init(const struct device *dev)
     return 0;
 }
 
-#define NEO_M9N_CONFIG_UART(inst) .uart = DEVICE_DT_GET(DT_INST_BUS(inst)),
+#define NEO_M9N_CONFIG_UART(inst) .bus.uart = DEVICE_DT_GET(DT_INST_BUS(inst)),
 
-#define NEO_M9N_CONFIG_I2C(inst) .i2c = I2C_DT_SPEC_INST_GET(inst),
+#define NEO_M9N_CONFIG_I2C(inst) .bus.i2c = I2C_DT_SPEC_INST_GET(inst),
 
 #define NEO_M9N_BUS_CFG(inst)                                                                                          \
     COND_CODE_1(DT_INST_ON_BUS(inst, i2c), (NEO_M9N_CONFIG_I2C(inst)), (NEO_M9N_CONFIG_UART(inst)))
 
 void print_dbg(void)
 {
-    LOG_INF("%d, %d", NEO_M9N_BUS_UART, NEO_M9N_BUS_I2C);
+    LOG_INF("%d", DEFAULT_ODR);
 }
 
 #define NEO_M9N_DEFINE(inst)                                                                                           \
     static struct neo_m9n_data neo_m9n_data_##inst;                                                                    \
     static const struct neo_m9n_config neo_m9n_config_##inst = {NEO_M9N_BUS_CFG(inst)};                                \
                                                                                                                        \
-    PM_DEVICE_DT_INST_DEFINE(inst, pm_action)                                                                          \
+    PM_DEVICE_DT_INST_DEFINE(inst, pm_action);                                                                         \
                                                                                                                        \
-    DEVICE_DT_INST_DEFINE(inst, neo_m9n_init, NULL, &neo_m9n_data_##inst, &neo_m9n_config_##inst, POST_KERNEL,         \
+    DEVICE_DT_INST_DEFINE(inst, neo_m9n_init, NULL, &neo_m9n_data_##inst, &neo_m9n_config_##inst, PRE_KERNEL_2,        \
                           CONFIG_NEO_M9N_INIT_PRIORITY, &api);
 
 DT_INST_FOREACH_STATUS_OKAY(NEO_M9N_DEFINE)
