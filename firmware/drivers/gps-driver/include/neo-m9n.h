@@ -25,7 +25,7 @@ struct neo_m9n_bus
 
 struct neo_m9n_data
 {
-    uint8_t test_data;
+    uint8_t odr;
 };
 
 struct neo_m9n_config

@@ -60,7 +60,7 @@ void print_dbg(void)
 }
 
 #define NEO_M9N_DEFINE(inst)                                                                                           \
-    static struct neo_m9n_data neo_m9n_data_##inst;                                                                    \
+    static struct neo_m9n_data neo_m9n_data_##inst = {.odr = DT_INST_PROP(inst, output_rate)};                         \
     static const struct neo_m9n_config neo_m9n_config_##inst = {NEO_M9N_BUS_CFG(inst)};                                \
                                                                                                                        \
     PM_DEVICE_DT_INST_DEFINE(inst, pm_action);                                                                         \

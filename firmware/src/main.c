@@ -21,6 +21,7 @@ char str[GPS_UART_BUF_SIZE * 4];
 
 K_THREAD_STACK_DEFINE(test_thread_stack_area, TEST_THREAD_STACKSIZE);
 
+const struct device *neo_m9n_gps = DEVICE_DT_GET(DT_ALIAS(neo_m9n));
 
 void test_thread(void *p1, void *p2, void *p3)
 {
@@ -42,7 +43,10 @@ int main(void)
 {
     // gps_init_test();
 
-    print_dbg();
+    // print_dbg();
+    const struct neo_m9n_data *dev_data = neo_m9n_gps->data;
+
+    LOG_INF("%d", dev_data->odr);
 
     // testThread_pid =
     //     k_thread_create(&testThread_data, test_thread_stack_area, K_THREAD_STACK_SIZEOF(test_thread_stack_area),
