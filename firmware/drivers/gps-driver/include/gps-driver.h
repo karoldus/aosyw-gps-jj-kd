@@ -100,4 +100,12 @@ gps_error_t gps_del_config(ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[]
 gps_error_t gps_set_cfg_rate(uint16_t nominal_time_ms, uint16_t ratio, ubxCfgTimeSystem_t time_system,
                              ubx_cfg_memory_set_del_layer_t layer);
 
+/**
+ * @brief Disable all NMEA output messages (GGA, GLL, GSA, GSV, RMC, VTG).
+ *
+ * @param layer Layer to write the configuration to, can be more than one layer.
+ * @return gps_error_t
+ */
+gps_error_t gps_set_cfg_disable_all_nmea(ubx_cfg_memory_set_del_layer_t layer);
+
 #endif // GPS_DRIVER_H_
