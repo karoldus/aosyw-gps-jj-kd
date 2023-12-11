@@ -244,6 +244,7 @@ gps_error_t gps_set_cfg_rate(uint16_t nominal_time_ms, uint16_t ratio, ubxCfgTim
 
     if (items_len == 0)
     {
+        LOG_ERR("No items to set");
         return GPS_ERROR_WRONG_PARAM;
     }
 

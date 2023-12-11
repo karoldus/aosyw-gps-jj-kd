@@ -3,16 +3,15 @@
 
 #include "inttypes.h"
 #include "ubx-cfg-defines.h"
+#include <errno.h>
 
 typedef enum
 { // TODO: add more error codes
     GPS_OK = 0,
-    GPS_ERROR = -1,
-    GPS_ERROR_WRONG_PARAM = -2,
-    GPS_ERROR_TIMEOUT = -3,
-    GPS_ERROR_NO_MEM = -4,
-
-    GPS_ERROR_UNKNOWN = -255,
+    GPS_ERROR = EPROTO,
+    GPS_ERROR_WRONG_PARAM = ENOTSUP,
+    GPS_ERROR_TIMEOUT = ETIME,
+    GPS_ERROR_NO_MEM = ENOSR,
 } gps_error_t;
 
 typedef struct
