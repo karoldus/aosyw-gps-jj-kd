@@ -11,6 +11,6 @@
 	gps: m9n {
 		compatible = "u-blox,m9n";
 		status = "okay";
-		output-rate = <25>;
+		output-rate = <1>;
 	};
 };

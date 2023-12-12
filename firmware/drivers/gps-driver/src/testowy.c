@@ -29,6 +29,7 @@ const struct uart_config uart_cfg = {.baudrate = GPS_UART_BAUDRATE,
 static void uart_cb(const struct device *dev, struct uart_event *evt, void *user_data)
 {
     ARG_UNUSED(dev);
+    
 
     switch (evt->type)
     {

@@ -48,9 +48,9 @@ int main(void)
 
     LOG_INF("%d", dev_data->odr);
 
-    // testThread_pid =
-    //     k_thread_create(&testThread_data, test_thread_stack_area, K_THREAD_STACK_SIZEOF(test_thread_stack_area),
-    //                     test_thread, NULL, NULL, NULL, TEST_THREAD_PRIORITY, K_ESSENTIAL, K_NO_WAIT);
+    testThread_pid =
+        k_thread_create(&testThread_data, test_thread_stack_area, K_THREAD_STACK_SIZEOF(test_thread_stack_area),
+                        test_thread, NULL, NULL, NULL, TEST_THREAD_PRIORITY, K_ESSENTIAL, K_NO_WAIT);
 
     k_sleep(K_FOREVER);
 
