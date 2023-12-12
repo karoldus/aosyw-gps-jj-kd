@@ -3,6 +3,7 @@
 
 #include "inttypes.h"
 #include "ubx-cfg-defines.h"
+#include "ubx-data-defines.h"
 #include <errno.h>
 
 typedef enum
