@@ -1,5 +1,7 @@
 description: ublox NEO-M9N GNSS module
 
+compatible: "u-blox,m9n"
+
 properties:
   int-gpio:
     type: phandle
@@ -9,10 +11,12 @@ properties:
     type: int
     description: |
       Default GNSS solutions output rate in Hz. Following values are allowed:
+        1
         10
         25
     default: 10
     enum:
+      - 1
       - 10
       - 25
 
