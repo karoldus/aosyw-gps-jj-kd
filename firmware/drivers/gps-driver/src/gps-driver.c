@@ -1,6 +1,7 @@
 #include "../include/gps-driver.h"
 #include "../include/gps-driver-context.h"
 #include "../include/ubx-cfg-defines.h"
+#include "../include/ubx-data-defines.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -313,4 +314,91 @@ gps_error_t gps_set_enable_ubx_nav_pvt(ubx_cfg_memory_set_del_layer_t layer)
                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_USB_U1, {1}}};
 
     return gps_set_config(layer, (gps_config_item_t *)item_list, sizeof(item_list) / sizeof(gps_config_item_t));
+}
+
+/////////////////////////////////////////////////////////////////////////
+//======================== DATA AND ACK HANDLING ========================
+/////////////////////////////////////////////////////////////////////////
+
+static gps_error_t gps_handle_received_ack(ubx_msg_t *msg)
+{
+    if (msg == NULL)
+    {
+        return GPS_ERROR_WRONG_PARAM;
+    }
+
+    if (msg->msg_class != UBX_ACK_CLASS || msg->payload_len != UBX_ACK_ACK_PAYLOAD_LEN)
+    {
+        LOG_ERR("gps_handle_received_ack: wrong ACK payload length");
+        return GPS_ERROR_WRONG_PARAM;
+    }
+
+    if (msg->msg_id != UBX_ACK_ACK_ID && msg->msg_id != UBX_ACK_NAK_ID)
+    {
+        LOG_ERR("gps_handle_received_ack: wrong ACK/NAK ID");
+        return GPS_ERROR_WRONG_PARAM;
+    }
+
+    uint8_t ack_msg_class = *(msg->payload);
+    uint8_t ack_msg_id = *(msg->payload + 1);
+
+    // TODO: logic
+
+    if (msg->msg_id == UBX_ACK_ACK_ID)
+    {
+        LOG_INF("ACK received for msg class: 0x%02X, msg id: 0x%02X", ack_msg_class, ack_msg_id);
+    }
+    else
+    {
+        LOG_INF("NAK received for msg class: 0x%02X, msg id: 0x%02X", ack_msg_class, ack_msg_id);
+    }
+
+    return GPS_OK;
+}
+
+static gps_error_t gps_handle_received_cfg(ubx_msg_t *msg)
+{
+    // TODO: implement
+    return GPS_OK;
+}
+
+static gps_error_t gps_handle_received_nav(ubx_msg_t *msg)
+{
+    // TODO: implement
+    return GPS_OK;
+}
+
+static gps_error_t gps_handle_received_other_class(ubx_msg_t *msg)
+{
+    // TODO: implement
+    return GPS_OK;
+}
+
+static gps_error_t gps_handle_received_msg(ubx_msg_t *msg)
+{
+    if (msg == NULL)
+    {
+        return GPS_ERROR_WRONG_PARAM;
+    }
+
+    switch (msg->msg_class)
+    {
+    case UBX_ACK_CLASS:
+        return gps_handle_received_ack(msg);
+        break;
+
+    case UBX_CFG_CLASS:
+        return gps_handle_received_cfg(msg);
+        break;
+
+    case UBX_NAV_CLASS:
+        return gps_handle_received_nav(msg);
+        break;
+
+    default:
+        return gps_handle_received_other_class(msg);
+        break;
+    }
+
+    return GPS_ERROR;
 }
