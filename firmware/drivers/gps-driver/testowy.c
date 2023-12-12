@@ -1,4 +1,4 @@
-#include "../include/testowy.h"
+#include "testowy.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <zephyr/drivers/uart.h>

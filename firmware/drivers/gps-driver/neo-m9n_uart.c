@@ -1,4 +1,4 @@
-#include "../include/neo-m9n.h"
+#include "neo-m9n.h"
 
 #if NEO_M9N_BUS_UART
 

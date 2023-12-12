@@ -1,10 +1,10 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
-#include "../drivers/gps-driver/include/gps-driver.h"
-#include "../drivers/gps-driver/include/testowy.h"
+#include "../drivers/gps-driver/gps-driver.h"
+#include "../drivers/gps-driver/testowy.h"
 
-#include "../drivers/gps-driver/include/neo-m9n.h"
+#include "../drivers/gps-driver/neo-m9n.h"
 
 #define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
 LOG_MODULE_REGISTER(main);

@@ -1,7 +1,7 @@
-#include "../include/gps-driver.h"
-#include "../include/gps-driver-context.h"
-#include "../include/ubx-cfg-defines.h"
-#include "../include/ubx-data-defines.h"
+#include "gps-driver.h"
+#include "gps-driver-context.h"
+#include "ubx-cfg-defines.h"
+#include "ubx-data-defines.h"
 
 #include <stdio.h>
 #include <stdlib.h>

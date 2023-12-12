@@ -1,5 +1,5 @@
-#include "../include/neo-m9n.h"
-#include "../include/testowy.h"
+#include "neo-m9n.h"
+#include "testowy.h"
 
 LOG_MODULE_REGISTER(M9N);
 
