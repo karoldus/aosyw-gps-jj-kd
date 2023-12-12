@@ -1,35 +1,5 @@
 {
   "files.associations": {
-    "testowy.h": "c",
-    "log.h": "c",
-    "neo-m9n.h": "c",
-    "devicetree.h": "c",
-    "i2c.h": "c",
-    "uart.h": "c",
-    "kernel.h": "c",
-    "random": "c",
-    "typeinfo": "c",
-    "array": "c",
-    "atomic": "c",
-    "bit": "c",
-    "*.tcc": "c",
-    "concepts": "c",
-    "cstddef": "c",
-    "cstdio": "c",
-    "cwchar": "c",
-    "deque": "c",
-    "vector": "c",
-    "functional": "c",
-    "memory": "c",
-    "memory_resource": "c",
-    "string_view": "c",
-    "tuple": "c",
-    "type_traits": "c",
-    "initializer_list": "c",
-    "new": "c",
-    "stdexcept": "c",
-    "string": "c",
-    "system_error": "c",
-    "ratio": "c"
+    "testowy.h": "c"
   }
 }

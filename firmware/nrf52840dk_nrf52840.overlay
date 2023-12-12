@@ -1,16 +1,9 @@
-/ {
-	aliases {
-		neo-m9n = &gps;
-	};
-};
-
 &uart1 {
 	status = "okay";
 	current-speed = <38400>;
 
 	gps: m9n {
 		compatible = "u-blox,m9n";
-		status = "okay";
-		output-rate = <1>;
+		output-rate = <25>;
 	};
 };
