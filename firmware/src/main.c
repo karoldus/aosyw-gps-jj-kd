@@ -1,6 +1,7 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include "../drivers/gps-driver/include/gps-driver.h"
 #include "../drivers/gps-driver/include/testowy.h"
 
 #include "../drivers/gps-driver/include/neo-m9n.h"
