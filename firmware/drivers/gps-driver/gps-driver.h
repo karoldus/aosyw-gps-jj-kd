@@ -5,6 +5,7 @@
 #include "ubx-cfg-defines.h"
 #include "ubx-data-defines.h"
 #include <errno.h>
+#include <zephyr/device.h>
 
 typedef enum
 { // TODO: add more error codes
@@ -60,7 +61,8 @@ typedef struct
  * @param config_len number of config items, 0 < config_len <= MAX_CONFIG_ITEMS
  * @return gps_error_t
  */
-gps_error_t gps_set_config(ubx_cfg_memory_set_del_layer_t layer, gps_config_item_t config[], uint8_t config_len);
+gps_error_t gps_set_config(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer, gps_config_item_t config[],
+                           uint8_t config_len);
 
 /**
  * @brief Get configuration manually based on the GPS documentation.
@@ -72,7 +74,8 @@ gps_error_t gps_set_config(ubx_cfg_memory_set_del_layer_t layer, gps_config_item
  * @param keys_len
  * @return gps_error_t
  */
-gps_error_t gps_get_config(ubx_cfg_memory_get_layer_t layer, uint32_t keys[], uint8_t keys_len);
+gps_error_t gps_get_config(const struct device *dev, ubx_cfg_memory_get_layer_t layer, uint32_t keys[],
+                           uint8_t keys_len);
 
 /**
  * @brief Delete configuration manually based on the GPS documentation.
@@ -84,7 +87,8 @@ gps_error_t gps_get_config(ubx_cfg_memory_get_layer_t layer, uint32_t keys[], ui
  * @param keys_len
  * @return gps_error_t
  */
-gps_error_t gps_del_config(ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[], uint8_t keys_len);
+gps_error_t gps_del_config(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[],
+                           uint8_t keys_len);
 
 // SPECIFIC CONFIGURATION
 
@@ -98,8 +102,8 @@ gps_error_t gps_del_config(ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[]
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @return gps_error_t
  */
-gps_error_t gps_set_cfg_rate(uint16_t nominal_time_ms, uint16_t ratio, ubxCfgTimeSystem_t time_system,
-                             ubx_cfg_memory_set_del_layer_t layer);
+gps_error_t gps_set_cfg_rate(const struct device *dev, uint16_t nominal_time_ms, uint16_t ratio,
+                             ubxCfgTimeSystem_t time_system, ubx_cfg_memory_set_del_layer_t layer);
 
 /**
  * @brief Disable all NMEA output messages (GGA, GLL, GSA, GSV, RMC, VTG).
@@ -107,7 +111,7 @@ gps_error_t gps_set_cfg_rate(uint16_t nominal_time_ms, uint16_t ratio, ubxCfgTim
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @return gps_error_t
  */
-gps_error_t gps_set_cfg_disable_all_nmea(ubx_cfg_memory_set_del_layer_t layer);
+gps_error_t gps_set_cfg_disable_all_nmea(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer);
 
 /**
  * @brief Enable UBX-NAV-PVT messages
@@ -115,6 +119,6 @@ gps_error_t gps_set_cfg_disable_all_nmea(ubx_cfg_memory_set_del_layer_t layer);
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @return gps_error_t
  */
-gps_error_t gps_set_enable_ubx_nav_pvt(ubx_cfg_memory_set_del_layer_t layer);
+gps_error_t gps_set_enable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer);
 
 #endif // GPS_DRIVER_H_

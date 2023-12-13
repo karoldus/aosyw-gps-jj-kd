@@ -64,6 +64,8 @@ typedef enum
 
 void test_api_func(void);
 
+int neo_m9n_bus_write(const struct device *dev, uint8_t *payload, uint16_t payload_len);
+
 typedef struct neo_m9n_api
 {
 };

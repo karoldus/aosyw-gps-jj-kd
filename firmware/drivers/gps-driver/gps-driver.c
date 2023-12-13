@@ -3,6 +3,7 @@
 #include "ubx-cfg-defines.h"
 #include "ubx-data-defines.h"
 
+#include "neo-m9n.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <zephyr/logging/log.h>
@@ -56,9 +57,98 @@ static gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_
     return GPS_OK;
 }
 
+/**
+ * @brief Generate checksum for UBX message
+ *
+ * @param payload Payload of UBX message including preamble, class, id, length and payload
+ * @param payload_len Length of payload including preamble, class, id, length and payload, but without checksum
+ * @param checksum_a output
+ * @param checksum_b output
+ * @return gps_error_t
+ */
+static gps_error_t _generate_checksum(uint8_t *payload, uint16_t payload_len, uint8_t *checksum_a, uint8_t *checksum_b)
+{
+    if (payload == NULL || payload_len == 0 || checksum_a == NULL || checksum_b == NULL)
+    {
+        return GPS_ERROR_WRONG_PARAM;
+    }
+
+    *checksum_a = 0;
+    *checksum_b = 0;
+
+    for (int i = 2; i < payload_len; i++)
+    {
+        *checksum_a += *(payload + i);
+        *checksum_b += *checksum_a;
+    }
+
+    return GPS_OK;
+}
+
+/**
+ * @brief Add preamble and checksum, send to device
+ *
+ * @param dev
+ * @param msg
+ * @return gps_error_t
+ */
+static gps_error_t _generate_and_send_msg(const struct device *dev, const ubx_msg_t *msg)
+{
+    if (msg == NULL)
+    {
+        return GPS_ERROR_WRONG_PARAM;
+    }
+
+    uint16_t uart_payload_len =
+        msg->payload_len + 8; // 8 = 2 for preamble + 1 for class + 1 for id + 2 for length + 2 for checksum
+    uint8_t *uart_payload = malloc(uart_payload_len);
+
+    if (uart_payload == NULL)
+    {
+        return GPS_ERROR_NO_MEM;
+    }
+
+    *(uart_payload) = UBX_PREAMBLE1;
+    *(uart_payload + 1) = UBX_PREAMBLE2;
+    *(uart_payload + 2) = msg->msg_class;
+    *(uart_payload + 3) = msg->msg_id;
+    *(uart_payload + 4) = (uint8_t)(msg->payload_len & 0xFF);
+    *(uart_payload + 5) = (uint8_t)((msg->payload_len >> 8) & 0xFF);
+
+    memcpy(uart_payload + 6, msg->payload, msg->payload_len);
+
+    uint8_t checksum_a = 0;
+    uint8_t checksum_b = 0;
+
+    gps_error_t err = _generate_checksum(uart_payload, uart_payload_len - 2, &checksum_a, &checksum_b);
+
+    if (err != GPS_OK)
+    {
+        free(uart_payload);
+        return err;
+    }
+
+    *(uart_payload + uart_payload_len - 2) = checksum_a;
+    *(uart_payload + uart_payload_len - 1) = checksum_b;
+
+    neo_m9n_bus_write(dev, uart_payload, uart_payload_len);
+
+    // TODO delete test below
+    LOG_INF("PAYLOAD: ");
+    for (int i = 0; i < uart_payload_len; i++)
+    {
+        printf("0x%02X, ", uart_payload[i]);
+    }
+
+    free(uart_payload);
+
+    return GPS_OK;
+}
+
 //=============================== GLOBAL FUNCTIONS =========================
 
-gps_error_t gps_set_config(ubx_cfg_memory_set_del_layer_t layers, gps_config_item_t config[], uint8_t config_len)
+gps_error_t gps_set_config(const struct device *dev, ubx_cfg_memory_set_del_layer_t layers, gps_config_item_t config[],
+                           uint8_t config_len)
 {
     if (config_len == 0 || config_len > MAX_CONFIG_ITEMS || config == NULL || layers == 0)
     {
@@ -101,18 +191,17 @@ gps_error_t gps_set_config(ubx_cfg_memory_set_del_layer_t layers, gps_config_ite
     msg.payload_len = payload_len;
     msg.payload = payload;
 
-    // TODO send msg and delete test below
-    printf("GPS SET CONFIG MSG: ");
-    for (int i = 0; i < payload_len; i++)
-    {
-        printf("%02X ", payload[i]);
-    }
-    printf(" LEN: 0x%2X\n", payload_len);
+    _generate_and_send_msg(dev, &msg);
+
+    free(payload);
+
+    // TODO wait for ACK/NAK, mutex
 
     return GPS_OK;
 }
 
-gps_error_t gps_get_config(ubx_cfg_memory_get_layer_t layer, uint32_t keys[], uint8_t keys_len)
+gps_error_t gps_get_config(const struct device *dev, ubx_cfg_memory_get_layer_t layer, uint32_t keys[],
+                           uint8_t keys_len)
 {
     if (keys_len == 0 || keys_len > MAX_CONFIG_ITEMS || keys == NULL)
     {
@@ -151,18 +240,17 @@ gps_error_t gps_get_config(ubx_cfg_memory_get_layer_t layer, uint32_t keys[], ui
     msg.payload_len = keys_len * sizeof(uint32_t) + 4;
     msg.payload = payload;
 
-    // TODO send msg and delete test below, wait for response (how?)
-    printf("GPS GET CONFIG MSG: ");
-    for (int i = 0; i < msg.payload_len; i++)
-    {
-        printf("%02X ", payload[i]);
-    }
-    printf(" LEN: 0x%2X\n", msg.payload_len);
+    _generate_and_send_msg(dev, &msg);
+
+    free(payload);
+
+    // TODO wait for ACK/NAK, response (?), mutex
 
     return GPS_OK;
 }
 
-gps_error_t gps_del_config(ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[], uint8_t keys_len)
+gps_error_t gps_del_config(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[],
+                           uint8_t keys_len)
 {
     if (keys_len == 0 || keys_len > MAX_CONFIG_ITEMS || keys == NULL)
     {
@@ -203,21 +291,19 @@ gps_error_t gps_del_config(ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[]
     msg.payload_len = keys_len * sizeof(uint32_t) + 4;
     msg.payload = payload;
 
-    // TODO send msg and delete test below, wait for response (how?)
-    printf("GPS DEL CONFIG MSG: ");
-    for (int i = 0; i < msg.payload_len; i++)
-    {
-        printf("%02X ", payload[i]);
-    }
-    printf(" LEN: 0x%2X\n", msg.payload_len);
+    _generate_and_send_msg(dev, &msg);
+
+    free(payload);
+
+    // TODO wait for ACK/NAK, mutex
 
     return GPS_OK;
 }
 
 //============================== SPECIFIC CONFIGURATION ==============================
 
-gps_error_t gps_set_cfg_rate(uint16_t nominal_time_ms, uint16_t ratio, ubxCfgTimeSystem_t time_system,
-                             ubx_cfg_memory_set_del_layer_t layer)
+gps_error_t gps_set_cfg_rate(const struct device *dev, uint16_t nominal_time_ms, uint16_t ratio,
+                             ubxCfgTimeSystem_t time_system, ubx_cfg_memory_set_del_layer_t layer)
 {
     gps_config_item_t items[3];
     uint8_t items_len = 0;
@@ -249,7 +335,7 @@ gps_error_t gps_set_cfg_rate(uint16_t nominal_time_ms, uint16_t ratio, ubxCfgTim
         return GPS_ERROR_WRONG_PARAM;
     }
 
-    return gps_set_config(layer, items, items_len);
+    return gps_set_config(dev, layer, items, items_len);
 }
 
 /* TODO: delete comment
@@ -281,7 +367,7 @@ lub bez flash:
 }
 
 */
-gps_error_t gps_set_cfg_disable_all_nmea(ubx_cfg_memory_set_del_layer_t layer)
+gps_error_t gps_set_cfg_disable_all_nmea(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer)
 {
     const gps_config_item_t item_list[] = {
         {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GGA_I2C_U1, {0}},   {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GGA_SPI_U1, {0}},
@@ -301,11 +387,11 @@ gps_error_t gps_set_cfg_disable_all_nmea(ubx_cfg_memory_set_del_layer_t layer)
         {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_VTG_UART2_U1, {0}}, {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_VTG_USB_U1, {0}},
     };
 
-    return gps_set_config(layer, (gps_config_item_t *)item_list, sizeof(item_list) / sizeof(gps_config_item_t));
+    return gps_set_config(dev, layer, (gps_config_item_t *)item_list, sizeof(item_list) / sizeof(gps_config_item_t));
 }
 
 // TODO: test if it works
-gps_error_t gps_set_enable_ubx_nav_pvt(ubx_cfg_memory_set_del_layer_t layer)
+gps_error_t gps_set_enable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer)
 {
     const gps_config_item_t item_list[] = {{UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_I2C_U1, {1}},
                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_SPI_U1, {1}},
@@ -313,7 +399,7 @@ gps_error_t gps_set_enable_ubx_nav_pvt(ubx_cfg_memory_set_del_layer_t layer)
                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_UART2_U1, {1}},
                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_USB_U1, {1}}};
 
-    return gps_set_config(layer, (gps_config_item_t *)item_list, sizeof(item_list) / sizeof(gps_config_item_t));
+    return gps_set_config(dev, layer, (gps_config_item_t *)item_list, sizeof(item_list) / sizeof(gps_config_item_t));
 }
 
 /////////////////////////////////////////////////////////////////////////

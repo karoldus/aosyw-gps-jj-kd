@@ -5,7 +5,7 @@ LOG_MODULE_REGISTER(M9N);
 
 static struct neo_m9n_api api;
 
-static inline int neo_m9n_bus_write(const struct device *dev, uint8_t *payload, uint16_t payload_len)
+int neo_m9n_bus_write(const struct device *dev, uint8_t *payload, uint16_t payload_len)
 {
     const struct neo_m9n_config *cfg = dev->config;
 

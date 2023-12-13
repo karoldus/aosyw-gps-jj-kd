@@ -1,6 +1,11 @@
 #ifndef UBX_DEFINES_H_
 #define UBX_DEFINES_H_
 
+//============================ PREAMBLE ========================================
+
+#define UBX_PREAMBLE1 0xB5
+#define UBX_PREAMBLE2 0x62
+
 //============================ CLASSES =========================================
 
 #define UBX_CFG_CLASS 0x06
