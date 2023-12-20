@@ -390,7 +390,6 @@ gps_error_t gps_set_cfg_disable_all_nmea(const struct device *dev, ubx_cfg_memor
     return gps_set_config(dev, layer, (gps_config_item_t *)item_list, sizeof(item_list) / sizeof(gps_config_item_t));
 }
 
-// TODO: test if it works
 gps_error_t gps_set_enable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer)
 {
     const gps_config_item_t item_list[] = {{UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_I2C_U1, {1}},
@@ -406,7 +405,7 @@ gps_error_t gps_set_enable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_
 //======================== DATA AND ACK HANDLING ========================
 /////////////////////////////////////////////////////////////////////////
 
-static gps_error_t gps_handle_received_ack(ubx_msg_t *msg)
+static gps_error_t gps_handle_received_ack(const struct device *dev, ubx_msg_t *msg)
 {
     if (msg == NULL)
     {
@@ -442,25 +441,25 @@ static gps_error_t gps_handle_received_ack(ubx_msg_t *msg)
     return GPS_OK;
 }
 
-static gps_error_t gps_handle_received_cfg(ubx_msg_t *msg)
+static gps_error_t gps_handle_received_cfg(const struct device *dev, ubx_msg_t *msg)
 {
     // TODO: implement
     return GPS_OK;
 }
 
-static gps_error_t gps_handle_received_nav(ubx_msg_t *msg)
+static gps_error_t gps_handle_received_nav(const struct device *dev, ubx_msg_t *msg)
 {
     // TODO: implement
     return GPS_OK;
 }
 
-static gps_error_t gps_handle_received_other_class(ubx_msg_t *msg)
+static gps_error_t gps_handle_received_other_class(const struct device *dev, ubx_msg_t *msg)
 {
     // TODO: implement
     return GPS_OK;
 }
 
-static gps_error_t gps_handle_received_msg(ubx_msg_t *msg)
+static gps_error_t gps_handle_received_msg(const struct device *dev, ubx_msg_t *msg)
 {
     if (msg == NULL)
     {
@@ -470,19 +469,19 @@ static gps_error_t gps_handle_received_msg(ubx_msg_t *msg)
     switch (msg->msg_class)
     {
     case UBX_ACK_CLASS:
-        return gps_handle_received_ack(msg);
+        return gps_handle_received_ack(dev, msg);
         break;
 
     case UBX_CFG_CLASS:
-        return gps_handle_received_cfg(msg);
+        return gps_handle_received_cfg(dev, msg);
         break;
 
     case UBX_NAV_CLASS:
-        return gps_handle_received_nav(msg);
+        return gps_handle_received_nav(dev, msg);
         break;
 
     default:
-        return gps_handle_received_other_class(msg);
+        return gps_handle_received_other_class(dev, msg);
         break;
     }
 
