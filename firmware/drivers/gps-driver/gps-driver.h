@@ -56,6 +56,7 @@ typedef struct
  * List of configs: section 5.8 of
  * https://content.u-blox.com/sites/default/files/u-blox-M9-SPG-4.04_InterfaceDescription_UBX-21022436.pdf
  *
+ * @param dev
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @param config
  * @param config_len number of config items, 0 < config_len <= MAX_CONFIG_ITEMS
@@ -69,6 +70,7 @@ gps_error_t gps_set_config(const struct device *dev, ubx_cfg_memory_set_del_laye
  * List of configs: section 5.8 of
  * https://content.u-blox.com/sites/default/files/u-blox-M9-SPG-4.04_InterfaceDescription_UBX-21022436.pdf
  *
+ * @param dev
  * @param layer Layer to read the configuration from. Only one layer can be read at a time.
  * @param keys
  * @param keys_len
@@ -82,6 +84,7 @@ gps_error_t gps_get_config(const struct device *dev, ubx_cfg_memory_get_layer_t 
  * List of configs: section 5.8 of
  * https://content.u-blox.com/sites/default/files/u-blox-M9-SPG-4.04_InterfaceDescription_UBX-21022436.pdf
  *
+ * @param dev
  * @param layer Layer to delete the configuration from, can be more than one layer.
  * @param keys
  * @param keys_len
@@ -95,6 +98,7 @@ gps_error_t gps_del_config(const struct device *dev, ubx_cfg_memory_set_del_laye
 /**
  * @brief Set GPS rate configuration.
  *
+ * @param dev
  * @param nominal_time_ms Nominal time between GNSS measurements. The minimum value is 25. 0 to left unchanged.
  * @param ratio Ratio of number of measurements to number of navigation solutions. E.g. 5 means five measurements for
  * every navigation solution. The minimum value is 1. The maximum value is 127. 0 to left unchanged.
@@ -108,6 +112,7 @@ gps_error_t gps_set_cfg_rate(const struct device *dev, uint16_t nominal_time_ms,
 /**
  * @brief Disable all NMEA output messages (GGA, GLL, GSA, GSV, RMC, VTG).
  *
+ * @param dev
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @return gps_error_t
  */
@@ -116,9 +121,19 @@ gps_error_t gps_set_cfg_disable_all_nmea(const struct device *dev, ubx_cfg_memor
 /**
  * @brief Enable UBX-NAV-PVT messages
  *
+ * @param dev
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @return gps_error_t
  */
 gps_error_t gps_set_enable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer);
+
+/**
+ * @brief Disable UBX-NAV-PVT messages
+ *
+ * @param dev
+ * @param layer Layer to write the configuration to, can be more than one layer.
+ * @return gps_error_t
+ */
+gps_error_t gps_set_disable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer);
 
 #endif // GPS_DRIVER_H_

@@ -24,12 +24,13 @@ LOG_MODULE_REGISTER(gps_driver);
 
 //================================= STATIC FUNCTIONS ==================================
 
-static uint8_t _is_little_endian()
-{
-    int32_t x = 1;
+// TODO: delete?
+//  static uint8_t _is_little_endian()
+//  {
+//      int32_t x = 1;
 
-    return (*((char *)(&x)) == 1);
-}
+//     return (*((char *)(&x)) == 1);
+// }
 
 static gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_item, uint8_t *out_payload,
                                                       uint16_t *out_payload_len)
@@ -110,8 +111,8 @@ static gps_error_t _generate_and_send_msg(const struct device *dev, const ubx_ms
 
     *(uart_payload) = UBX_PREAMBLE1;
     *(uart_payload + 1) = UBX_PREAMBLE2;
-    *(uart_payload + 2) = msg->msg_class;
-    *(uart_payload + 3) = msg->msg_id;
+    *(uart_payload + 2) = (uint8_t)(msg->msg_class);
+    *(uart_payload + 3) = (uint8_t)(msg->msg_id);
     *(uart_payload + 4) = (uint8_t)(msg->payload_len & 0xFF);
     *(uart_payload + 5) = (uint8_t)((msg->payload_len >> 8) & 0xFF);
 
@@ -150,7 +151,7 @@ static gps_error_t _generate_and_send_msg(const struct device *dev, const ubx_ms
 gps_error_t gps_set_config(const struct device *dev, ubx_cfg_memory_set_del_layer_t layers, gps_config_item_t config[],
                            uint8_t config_len)
 {
-    if (config_len == 0 || config_len > MAX_CONFIG_ITEMS || config == NULL || layers == 0)
+    if (dev == NULL || config_len == 0 || config_len > MAX_CONFIG_ITEMS || config == NULL || layers == 0)
     {
         return GPS_ERROR_WRONG_PARAM;
     }
@@ -203,7 +204,7 @@ gps_error_t gps_set_config(const struct device *dev, ubx_cfg_memory_set_del_laye
 gps_error_t gps_get_config(const struct device *dev, ubx_cfg_memory_get_layer_t layer, uint32_t keys[],
                            uint8_t keys_len)
 {
-    if (keys_len == 0 || keys_len > MAX_CONFIG_ITEMS || keys == NULL)
+    if (dev == NULL || keys_len == 0 || keys_len > MAX_CONFIG_ITEMS || keys == NULL)
     {
         return GPS_ERROR_WRONG_PARAM;
     }
@@ -252,7 +253,7 @@ gps_error_t gps_get_config(const struct device *dev, ubx_cfg_memory_get_layer_t 
 gps_error_t gps_del_config(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[],
                            uint8_t keys_len)
 {
-    if (keys_len == 0 || keys_len > MAX_CONFIG_ITEMS || keys == NULL)
+    if (dev == NULL || keys_len == 0 || keys_len > MAX_CONFIG_ITEMS || keys == NULL)
     {
         return GPS_ERROR_WRONG_PARAM;
     }
@@ -397,6 +398,17 @@ gps_error_t gps_set_enable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_
                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_UART1_U1, {1}},
                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_UART2_U1, {1}},
                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_USB_U1, {1}}};
+
+    return gps_set_config(dev, layer, (gps_config_item_t *)item_list, sizeof(item_list) / sizeof(gps_config_item_t));
+}
+
+gps_error_t gps_set_disable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer)
+{
+    const gps_config_item_t item_list[] = {{UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_I2C_U1, {0}},
+                                           {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_SPI_U1, {0}},
+                                           {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_UART1_U1, {0}},
+                                           {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_UART2_U1, {0}},
+                                           {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_USB_U1, {0}}};
 
     return gps_set_config(dev, layer, (gps_config_item_t *)item_list, sizeof(item_list) / sizeof(gps_config_item_t));
 }
