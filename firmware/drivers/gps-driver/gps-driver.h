@@ -46,6 +46,20 @@ typedef struct
 #define MAX_CONFIG_ITEMS     (64U)
 #define MAX_CONFIG_ITEM_SIZE (12U)
 
+#define GPS_SEND_MSG_MUTEX_TIMEOUT_MS (3000U)
+
+//============== GENERAL API ==============
+
+/**
+ * @brief Send msg to GPS.
+ *
+ * @param dev
+ * @param payload Complete msg to send to GPS (including preamble, msg class, msg id, payload and checksum).
+ * @param payload_len
+ * @return gps_error_t
+ */
+gps_error_t gps_send_generic(const struct device *dev, uint8_t *payload, uint16_t payload_len);
+
 //============== CONFIGURATION API ==============
 
 // GENERAL CONFIGURATION

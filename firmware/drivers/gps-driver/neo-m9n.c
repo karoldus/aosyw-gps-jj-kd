@@ -93,6 +93,13 @@ static int neo_m9n_init(const struct device *dev)
         goto error;
     }
 
+    ret = k_sem_init(&(dev_data->msg_send_sem), 1, 1);
+    if (ret)
+    {
+        LOG_ERR("Error while initializing semaphore %d", ret);
+        goto error;
+    }
+
 error:
     return ret;
 }

@@ -148,6 +148,29 @@ static gps_error_t _generate_and_send_msg(const struct device *dev, const ubx_ms
 
 //=============================== GLOBAL FUNCTIONS =========================
 
+gps_error_t gps_send_generic(const struct device *dev, uint8_t *payload, uint16_t payload_len)
+{
+    if (dev == NULL || payload == NULL || payload_len == 0)
+    {
+        return GPS_ERROR_WRONG_PARAM;
+    }
+
+    struct neo_m9n_data *dev_data = dev->data;
+
+    if (k_sem_take(&(dev_data->msg_send_sem), K_MSEC(GPS_SEND_MSG_MUTEX_TIMEOUT_MS)) != 0)
+    {
+        LOG_ERR("TIMEOUT taking semaphore");
+        return GPS_ERROR_TIMEOUT;
+    }
+
+    neo_m9n_bus_write(dev, payload, payload_len);
+
+    // TODO should we wait for ACK/NAK before unlocking mutex?
+    k_sem_give(&(dev_data->msg_send_sem));
+
+    return GPS_OK;
+}
+
 gps_error_t gps_set_config(const struct device *dev, ubx_cfg_memory_set_del_layer_t layers, gps_config_item_t config[],
                            uint8_t config_len)
 {
@@ -192,11 +215,20 @@ gps_error_t gps_set_config(const struct device *dev, ubx_cfg_memory_set_del_laye
     msg.payload_len = payload_len;
     msg.payload = payload;
 
+    struct neo_m9n_data *dev_data = dev->data;
+
+    if (k_sem_take(&(dev_data->msg_send_sem), K_MSEC(GPS_SEND_MSG_MUTEX_TIMEOUT_MS)) != 0)
+    {
+        LOG_ERR("TIMEOUT taking semaphore");
+        return GPS_ERROR_TIMEOUT;
+    }
+
     _generate_and_send_msg(dev, &msg);
 
     free(payload);
 
-    // TODO wait for ACK/NAK, mutex
+    // TODO wait for ACK/NAK before giving semaphore?
+    k_sem_give(&(dev_data->msg_send_sem));
 
     return GPS_OK;
 }
@@ -241,11 +273,19 @@ gps_error_t gps_get_config(const struct device *dev, ubx_cfg_memory_get_layer_t 
     msg.payload_len = keys_len * sizeof(uint32_t) + 4;
     msg.payload = payload;
 
+    struct neo_m9n_data *dev_data = dev->data;
+    if (k_sem_take(&(dev_data->msg_send_sem), K_MSEC(GPS_SEND_MSG_MUTEX_TIMEOUT_MS)) != 0)
+    {
+        LOG_ERR("TIMEOUT taking semaphore");
+        return GPS_ERROR_TIMEOUT;
+    }
+
     _generate_and_send_msg(dev, &msg);
 
     free(payload);
 
-    // TODO wait for ACK/NAK, response (?), mutex
+    // TODO wait for NAK/response before giving semaphore?
+    k_sem_give(&(dev_data->msg_send_sem));
 
     return GPS_OK;
 }
@@ -292,11 +332,19 @@ gps_error_t gps_del_config(const struct device *dev, ubx_cfg_memory_set_del_laye
     msg.payload_len = keys_len * sizeof(uint32_t) + 4;
     msg.payload = payload;
 
+    struct neo_m9n_data *dev_data = dev->data;
+    if (k_sem_take(&(dev_data->msg_send_sem), K_MSEC(GPS_SEND_MSG_MUTEX_TIMEOUT_MS)) != 0)
+    {
+        LOG_ERR("TIMEOUT taking semaphore");
+        return GPS_ERROR_TIMEOUT;
+    }
+
     _generate_and_send_msg(dev, &msg);
 
     free(payload);
 
-    // TODO wait for ACK/NAK, mutex
+    // TODO wait for ACK/NAK before giving semaphore?
+    k_sem_give(&(dev_data->msg_send_sem));
 
     return GPS_OK;
 }

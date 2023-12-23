@@ -47,6 +47,8 @@ extern const struct neo_m9n_bus_io neo_m9n_bus_io_i2c;
 struct neo_m9n_data
 {
     uint8_t odr;
+    // Msg sent to GPS and waiting for response semaphore. You can't send another msg if this semaphore is taken.
+    struct k_sem msg_send_sem;
 };
 
 struct neo_m9n_config
