@@ -8,10 +8,15 @@ static void run_and_clean_wait_for_resp_handler(struct device *dev, uint8_t gps_
 {
     struct neo_m9n_data *dev_data = dev->data;
 
+    uint8_t class = dev_data->wait_for_resp_callback.class;
+    uint8_t id = dev_data->wait_for_resp_callback.id;
+
+    dev_data->wait_for_resp_callback.class = 0;
+    dev_data->wait_for_resp_callback.id = 0;
+
     if (dev_data->wait_for_resp_callback.handler != NULL)
     {
-        dev_data->wait_for_resp_callback.handler(dev, gps_handler_code, dev_data->wait_for_resp_callback.class,
-                                                 dev_data->wait_for_resp_callback.id, msg,
+        dev_data->wait_for_resp_callback.handler(dev, gps_handler_code, class, id, msg,
                                                  dev_data->wait_for_resp_callback.user_data);
     }
     else
@@ -21,8 +26,6 @@ static void run_and_clean_wait_for_resp_handler(struct device *dev, uint8_t gps_
 
     dev_data->wait_for_resp_callback.handler = NULL;
     dev_data->wait_for_resp_callback.user_data = NULL;
-    dev_data->wait_for_resp_callback.class = 0;
-    dev_data->wait_for_resp_callback.id = 0;
 
     return 0;
 }
@@ -83,9 +86,6 @@ void tx_thread(struct device *dev, void *p2, void *p3)
             {
                 // RX thread didn't give semaphore in time
                 LOG_ERR("Current msg not responded - timeout");
-
-                dev_data->wait_for_resp_callback.class = 0;
-                dev_data->wait_for_resp_callback.id = 0;
 
                 run_and_clean_wait_for_resp_handler(dev, GPS_HANDLER_CODES_TIMEOUT, NULL);
             }
