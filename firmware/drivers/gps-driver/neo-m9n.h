@@ -8,6 +8,8 @@
 #include <zephyr/logging/log.h>
 #include <zephyr/pm/device.h>
 
+#include "gps-driver-context.h"
+
 #define DT_DRV_COMPAT u_blox_m9n
 
 #define CONFIG_NEO_M9N_INIT_PRIORITY 90
@@ -44,11 +46,33 @@ extern const struct neo_m9n_bus_io neo_m9n_bus_io_uart;
 extern const struct neo_m9n_bus_io neo_m9n_bus_io_i2c;
 #endif
 
+typedef struct
+{
+    uint8_t class;
+    uint8_t id;
+    uint8_t one_time; // 1 if this msg is sent only once and handler can be removed after receiving it
+    gps_handler_t handler;
+    void *user_data;
+} neo_m9n_callback_t;
+
 struct neo_m9n_data
 {
     uint8_t odr;
+
+    k_thread_stack_t *tx_thread_stack;
+    struct k_thread tx_thread_data;
+    k_thread_stack_t *rx_thread_stack;
+    struct k_thread rx_thread_data;
+
+    // Queue for messages to send to GPS
+    struct k_msgq tx_queue;
+    char tx_queue_data[GPS_DRIVER_TX_QUEUE_SIZE * sizeof(gps_driver_tx_queue_element_t)];
+
     // Msg sent to GPS and waiting for response semaphore. You can't send another msg if this semaphore is taken.
-    struct k_sem msg_send_sem;
+    struct k_sem tx_wait_for_resp_sem;
+
+    neo_m9n_callback_t wait_for_resp_callback;
+    neo_m9n_callback_t callback_list[GPS_DRIVER_CALLBACKS_MAX_COUNT];
 };
 
 struct neo_m9n_config

@@ -1,6 +1,7 @@
 #ifndef GPS_DRIVER_H_
 #define GPS_DRIVER_H_
 
+#include "gps-driver-context.h"
 #include "inttypes.h"
 #include "ubx-cfg-defines.h"
 #include "ubx-data-defines.h"
@@ -46,8 +47,6 @@ typedef struct
 #define MAX_CONFIG_ITEMS     (64U)
 #define MAX_CONFIG_ITEM_SIZE (12U)
 
-#define GPS_SEND_MSG_MUTEX_TIMEOUT_MS (3000U)
-
 //============== GENERAL API ==============
 
 /**
@@ -56,9 +55,13 @@ typedef struct
  * @param dev
  * @param payload Complete msg to send to GPS (including preamble, msg class, msg id, payload and checksum).
  * @param payload_len
+ * @param wait_for_resp If true, wait for response from GPS.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
-gps_error_t gps_send_generic(const struct device *dev, uint8_t *payload, uint16_t payload_len);
+gps_error_t gps_send_generic(const struct device *dev, uint8_t *payload, uint16_t payload_len, uint8_t wait_for_resp,
+                             gps_handler_t handler, void *user_data);
 
 //============== CONFIGURATION API ==============
 
@@ -74,10 +77,13 @@ gps_error_t gps_send_generic(const struct device *dev, uint8_t *payload, uint16_
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @param config
  * @param config_len number of config items, 0 < config_len <= MAX_CONFIG_ITEMS
+ * @param wait_for_resp If true, wait for response from GPS.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
 gps_error_t gps_set_config(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer, gps_config_item_t config[],
-                           uint8_t config_len);
+                           uint8_t config_len, uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
 
 /**
  * @brief Get configuration manually based on the GPS documentation.
@@ -88,10 +94,13 @@ gps_error_t gps_set_config(const struct device *dev, ubx_cfg_memory_set_del_laye
  * @param layer Layer to read the configuration from. Only one layer can be read at a time.
  * @param keys
  * @param keys_len
+ * @param wait_for_resp If true, wait for response from GPS.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
 gps_error_t gps_get_config(const struct device *dev, ubx_cfg_memory_get_layer_t layer, uint32_t keys[],
-                           uint8_t keys_len);
+                           uint8_t keys_len, uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
 
 /**
  * @brief Delete configuration manually based on the GPS documentation.
@@ -102,10 +111,13 @@ gps_error_t gps_get_config(const struct device *dev, ubx_cfg_memory_get_layer_t 
  * @param layer Layer to delete the configuration from, can be more than one layer.
  * @param keys
  * @param keys_len
+ * @param wait_for_resp If true, wait for response from GPS.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
 gps_error_t gps_del_config(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[],
-                           uint8_t keys_len);
+                           uint8_t keys_len, uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
 
 // SPECIFIC CONFIGURATION
 
@@ -118,36 +130,52 @@ gps_error_t gps_del_config(const struct device *dev, ubx_cfg_memory_set_del_laye
  * every navigation solution. The minimum value is 1. The maximum value is 127. 0 to left unchanged.
  * @param time_system Time system to which measurements are aligned. UBX_CFG_TYPES_TIME_SYSTEM_NONE to left unchanged.
  * @param layer Layer to write the configuration to, can be more than one layer.
+ * @param wait_for_resp If true, wait for response from GPS.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
 gps_error_t gps_set_cfg_rate(const struct device *dev, uint16_t nominal_time_ms, uint16_t ratio,
-                             ubxCfgTimeSystem_t time_system, ubx_cfg_memory_set_del_layer_t layer);
+                             ubxCfgTimeSystem_t time_system, ubx_cfg_memory_set_del_layer_t layer,
+                             uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
 
 /**
  * @brief Disable all NMEA output messages (GGA, GLL, GSA, GSV, RMC, VTG).
  *
  * @param dev
  * @param layer Layer to write the configuration to, can be more than one layer.
+ * @param wait_for_resp If true, wait for response from GPS.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
-gps_error_t gps_set_cfg_disable_all_nmea(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer);
+gps_error_t gps_set_cfg_disable_all_nmea(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer,
+                                         uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
 
 /**
  * @brief Enable UBX-NAV-PVT messages
  *
  * @param dev
  * @param layer Layer to write the configuration to, can be more than one layer.
+ * @param wait_for_resp If true, wait for response from GPS.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
-gps_error_t gps_set_enable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer);
+gps_error_t gps_set_enable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer,
+                                       uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
 
 /**
  * @brief Disable UBX-NAV-PVT messages
  *
  * @param dev
  * @param layer Layer to write the configuration to, can be more than one layer.
+ * @param wait_for_resp If true, wait for response from GPS.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
-gps_error_t gps_set_disable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer);
+gps_error_t gps_set_disable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer,
+                                        uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
 
 #endif // GPS_DRIVER_H_
