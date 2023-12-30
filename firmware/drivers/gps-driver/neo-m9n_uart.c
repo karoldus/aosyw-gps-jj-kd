@@ -4,9 +4,6 @@
 
 LOG_MODULE_REGISTER(M9N_UART);
 
-#define GPS_UART_BUF_SIZE   1000
-#define GPS_UART_RX_TIMEOUT 5000
-
 static void uart_cb(const struct device *dev, struct uart_event *evt, void *user_data)
 {
     ARG_UNUSED(dev);
@@ -16,6 +13,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
     struct neo_m9n_data *dev_data = device->data;
 
     int ret;
+    uint32_t written;
 
     switch (evt->type)
     {
@@ -25,15 +23,22 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 
     case UART_RX_RDY:
         LOG_INF("off: %d, len: %d ", evt->data.rx.offset, evt->data.rx.len);
-        k_msgq_put(&dev_data->msgq, evt->data.rx.buf + evt->data.rx.offset, K_NO_WAIT);
+
+        written = ring_buf_put(&dev_data->rx_rb, evt->data.rx.buf + evt->data.rx.offset, evt->data.rx.len);
+        if (written != evt->data.rx.len)
+        {
+            LOG_WRN("Received bytes dropped from ring buf");
+        }
+
+        k_sem_give(&dev_data->rx_sem);
         break;
 
     case UART_RX_BUF_REQUEST:
-        uart_rx_buf_rsp(dev, dev_data->rx_buff, GPS_UART_BUF_SIZE);
+        uart_rx_buf_rsp(dev, dev_data->rx_buff, NEO_M9N_RX_BUF_SIZE);
         break;
 
     case UART_RX_DISABLED:
-        ret = uart_rx_enable(dev, dev_data->rx_buff, GPS_UART_BUF_SIZE, GPS_UART_RX_TIMEOUT);
+        ret = uart_rx_enable(dev, dev_data->rx_buff, NEO_M9N_RX_BUF_SIZE, NEO_M9N_UART_ASYNC_RX_TIMEOUT_US);
         if (ret)
         {
             LOG_ERR("Failed to re-enable UART");
@@ -75,17 +80,14 @@ static int neo_m9n_uart_init(const struct device *dev)
         goto error;
     }
 
-    k_msgq_init(&dev_data->msgq, dev_data->msgq_buffer, GPS_UART_BUF_SIZE, 5);
-
     ret = uart_callback_set(bus->uart, uart_cb, dev);
     if (ret)
     {
         LOG_ERR("Error while setting UART callback");
         goto error;
     }
-    k_sleep(K_MSEC(100));
 
-    ret = uart_rx_enable(bus->uart, dev_data->rx_buff, GPS_UART_BUF_SIZE, GPS_UART_RX_TIMEOUT);
+    ret = uart_rx_enable(bus->uart, dev_data->rx_buff, NEO_M9N_RX_BUF_SIZE, NEO_M9N_UART_ASYNC_RX_TIMEOUT_US);
     if (ret < 0)
     {
         LOG_ERR("Failed to enable UART RX");
@@ -95,11 +97,24 @@ error:
     return ret;
 }
 
-static int neo_m9n_read_uart(const struct device *dev, uint8_t *payload, k_timeout_t timeout)
+static int neo_m9n_read_uart(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read)
 {
     struct neo_m9n_data *dev_data = dev->data;
 
-    int ret = k_msgq_get(&dev_data->msgq, payload, timeout);
+    struct modem_iface_uart_data *data;
+
+    if (!dev || !dev_data)
+    {
+        return -EINVAL;
+    }
+
+    if (size == 0)
+    {
+        *bytes_read = 0;
+        return 0;
+    }
+
+    *bytes_read = ring_buf_get(&dev_data->rx_rb, buf, size);
 
     return 0;
 }

@@ -13,12 +13,14 @@
 
 #define DT_DRV_COMPAT u_blox_m9n
 
-#define CONFIG_NEO_M9N_INIT_PRIORITY 90
+#define NEO_M9N_INIT_PRIORITY 90
+
+#define NEO_M9N_RX_BUF_SIZE   1000
+#define NEO_M9N_RING_BUF_SIZE   5 * NEO_M9N_RX_BUF_SIZE
+#define NEO_M9N_UART_ASYNC_RX_TIMEOUT_US 5000
 
 #define NEO_M9N_BUS_UART DT_ANY_INST_ON_BUS_STATUS_OKAY(uart)
 #define NEO_M9N_BUS_I2C  DT_ANY_INST_ON_BUS_STATUS_OKAY(i2c)
-
-// #undef DT_DRV_COMPAT
 
 union neo_m9n_bus
 {
@@ -32,7 +34,7 @@ union neo_m9n_bus
 
 typedef int (*neo_m9n_bus_init_fn)(const struct device *dev);
 typedef int (*neo_m9n_write_fn)(const union neo_m9n_bus *bus, uint8_t *payload, uint16_t payload_len);
-typedef int (*neo_m9n_read_fn)(const struct device *dev, uint8_t *payload, k_timeout_t timeout);
+typedef int (*neo_m9n_read_fn)(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read);
 
 struct neo_m9n_bus_io
 {
@@ -52,11 +54,14 @@ extern const struct neo_m9n_bus_io neo_m9n_bus_io_i2c;
 struct neo_m9n_data
 {
     uint8_t odr;
-    struct k_msgq msgq;
-    char msgq_buffer[5 * 1000];
-    uint8_t rx_buff[1000];
+
+    uint8_t rx_buff[NEO_M9N_RX_BUF_SIZE];
+
+	uint8_t iface_rb_buf[NEO_M9N_RING_BUF_SIZE];
+	struct ring_buf rx_rb;
 
     struct k_sem tx_sem;
+    struct k_sem rx_sem;
 };
 
 struct neo_m9n_config
@@ -76,6 +81,6 @@ typedef struct neo_m9n_api
 {
 };
 
-int neo_m9n_get_data(const struct device *dev, uint8_t *payload);
+int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read, k_timeout_t timeout);
 
 #endif /* __NEO_M9N_H__ */
