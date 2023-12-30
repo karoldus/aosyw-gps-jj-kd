@@ -3,7 +3,7 @@
 
 #include "inttypes.h"
 
-#define GPS_UART_BUF_SIZE 100
+#define GPS_UART_BUF_SIZE 1000
 
 typedef struct GPSData
 {

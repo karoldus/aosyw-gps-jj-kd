@@ -12,6 +12,18 @@ static inline int neo_m9n_bus_write(const struct device *dev, uint8_t *payload, 
     return cfg->bus_io->write(&cfg->bus, payload, payload_len);
 }
 
+static inline int neo_m9n_bus_read(const struct device *dev, uint8_t *payload, k_timeout_t timeout)
+{
+    const struct neo_m9n_config *cfg = dev->config;
+
+    return cfg->bus_io->read(dev, payload, timeout);
+}
+
+int neo_m9n_get_data(const struct device *dev, uint8_t *payload)
+{
+    return neo_m9n_bus_read(dev, payload, K_FOREVER);
+}
+
 static inline int neo_m9n_set_odr(const struct device *dev, neo_m9n_odr_t odr)
 {
     int ret;
@@ -35,6 +47,76 @@ static inline int neo_m9n_set_odr(const struct device *dev, neo_m9n_odr_t odr)
         break;
     }
 
+    return ret;
+}
+
+static inline int neo_m9n_set_pvt(const struct device *dev)
+{
+    int ret;
+
+    ret = neo_m9n_bus_write(dev, gps_config_default, sizeof(gps_config_default));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_GLL_off, sizeof(gps_config_GLL_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_GSA_off, sizeof(gps_config_GSA_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_GSV_off, sizeof(gps_config_GSV_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_GGA_off, sizeof(gps_config_GGA_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_VTG_off, sizeof(gps_config_VTG_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_RMC_off, sizeof(gps_config_RMC_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_UART1_NAV_PVT_on, sizeof(gps_config_UART1_NAV_PVT_on));
+    if (ret)
+    {
+        goto error;
+    }
+
+error:
     return ret;
 }
 
@@ -73,18 +155,29 @@ static int neo_m9n_init(const struct device *dev)
 {
     int ret;
 
-    const struct neo_m9n_data *dev_data = dev->data;
+    struct neo_m9n_data *dev_data = dev->data;
 
     const struct neo_m9n_config *dev_config = dev->config;
 
     LOG_INF("Initializing u-blox NEO M9N");
 
-    ret = dev_config->bus_io->init(&dev_config->bus);
+    k_sem_init(&dev_data->tx_sem, 0, 1);
+
+    ret = dev_config->bus_io->init(dev);
     if (ret)
     {
         LOG_ERR("Error while initializing bus");
         goto error;
     }
+
+    ret = neo_m9n_set_pvt(dev);
+    if (ret)
+    {
+        LOG_ERR("Error while setting PVT %d", ret);
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
 
     ret = neo_m9n_set_odr(dev, dev_data->odr);
     if (ret)
@@ -93,6 +186,7 @@ static int neo_m9n_init(const struct device *dev)
         goto error;
     }
 
+    LOG_INF("Initializing u-blox NEO M9N completed");
 error:
     return ret;
 }
@@ -103,11 +197,6 @@ error:
 
 #define NEO_M9N_BUS_CFG(inst)                                                                                          \
     COND_CODE_1(DT_INST_ON_BUS(inst, i2c), (NEO_M9N_CONFIG_I2C(inst)), (NEO_M9N_CONFIG_UART(inst)))
-
-void print_dbg(void)
-{
-    // LOG_INF("%d", DEFAULT_ODR);
-}
 
 #define NEO_M9N_DEFINE(inst)                                                                                           \
     static struct neo_m9n_data neo_m9n_data_##inst = {.odr = DT_INST_PROP(inst, output_rate)};                         \
