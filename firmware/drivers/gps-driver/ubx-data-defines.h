@@ -3,6 +3,8 @@
 
 #include "inttypes.h"
 
+#define UBX_MIN_MSG_LEN 8 // preamble + class + id + length + checksum
+
 //============================ CLASSES =========================================
 
 #define UBX_NAV_CLASS 0x01

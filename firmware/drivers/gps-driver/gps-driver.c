@@ -458,89 +458,112 @@ gps_error_t gps_set_disable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory
                           wait_for_resp, handler, user_data);
 }
 
-/////////////////////////////////////////////////////////////////////////
-//======================== DATA AND ACK HANDLING ========================
-/////////////////////////////////////////////////////////////////////////
+//============================== HANDLERS ==============================
 
-static gps_error_t gps_handle_received_ack(const struct device *dev, ubx_msg_t *msg)
+gps_error_t gps_register_callback(const struct device *dev, uint8_t msg_class, uint8_t msg_id, gps_handler_t handler,
+                                  void *user_data, uint8_t one_time_flag)
 {
-    if (msg == NULL)
+    if (handler == NULL || dev == NULL)
     {
         return GPS_ERROR_WRONG_PARAM;
     }
 
-    if (msg->msg_class != UBX_ACK_CLASS || msg->payload_len != UBX_ACK_ACK_PAYLOAD_LEN)
+    struct neo_m9n_data *dev_data = dev->data;
+
+    if (dev_data->callback_list_count >= GPS_DRIVER_CALLBACKS_MAX_COUNT)
     {
-        LOG_ERR("gps_handle_received_ack: wrong ACK payload length");
-        return GPS_ERROR_WRONG_PARAM;
+        LOG_ERR("Cannot register callback - max count reached");
+        return GPS_ERROR_NO_MEM;
     }
 
-    if (msg->msg_id != UBX_ACK_ACK_ID && msg->msg_id != UBX_ACK_NAK_ID)
+    neo_m9n_callback_t callback = {
+        .class = msg_class,
+        .id = msg_id,
+        .handler = handler,
+        .user_data = user_data,
+        .one_time = one_time_flag,
+    };
+
+    if (k_sem_take(&(dev_data->callbacks_sem), K_MSEC(1000)) != 0)
     {
-        LOG_ERR("gps_handle_received_ack: wrong ACK/NAK ID");
-        return GPS_ERROR_WRONG_PARAM;
+        LOG_ERR("Cannot take semaphore");
+        return GPS_ERROR;
     }
 
-    uint8_t ack_msg_class = *(msg->payload);
-    uint8_t ack_msg_id = *(msg->payload + 1);
-
-    // TODO: logic
-
-    if (msg->msg_id == UBX_ACK_ACK_ID)
+    for (int i = 0; i < GPS_DRIVER_CALLBACKS_MAX_COUNT; i++)
     {
-        LOG_INF("ACK received for msg class: 0x%02X, msg id: 0x%02X", ack_msg_class, ack_msg_id);
-    }
-    else
-    {
-        LOG_INF("NAK received for msg class: 0x%02X, msg id: 0x%02X", ack_msg_class, ack_msg_id);
+        if (dev_data->callback_list[i].class == 0 && dev_data->callback_list[i].id == 0)
+        {
+            dev_data->callback_list[i] = callback;
+            dev_data->callback_list_count++;
+            k_sem_give(&(dev_data->callbacks_sem));
+            return GPS_OK;
+        }
     }
 
-    return GPS_OK;
-}
-
-static gps_error_t gps_handle_received_cfg(const struct device *dev, ubx_msg_t *msg)
-{
-    // TODO: implement
-    return GPS_OK;
-}
-
-static gps_error_t gps_handle_received_nav(const struct device *dev, ubx_msg_t *msg)
-{
-    // TODO: implement
-    return GPS_OK;
-}
-
-static gps_error_t gps_handle_received_other_class(const struct device *dev, ubx_msg_t *msg)
-{
-    // TODO: implement
-    return GPS_OK;
-}
-
-static gps_error_t gps_handle_received_msg(const struct device *dev, ubx_msg_t *msg)
-{
-    if (msg == NULL)
-    {
-        return GPS_ERROR_WRONG_PARAM;
-    }
-
-    switch (msg->msg_class)
-    {
-    case UBX_ACK_CLASS:
-        return gps_handle_received_ack(dev, msg);
-        break;
-
-    case UBX_CFG_CLASS:
-        return gps_handle_received_cfg(dev, msg);
-        break;
-
-    case UBX_NAV_CLASS:
-        return gps_handle_received_nav(dev, msg);
-        break;
-
-    default:
-        return gps_handle_received_other_class(dev, msg);
-        break;
-    }
+    k_sem_give(&(dev_data->callbacks_sem));
 
     return GPS_ERROR;
+}
+
+gps_error_t gps_unregister_callback(const struct device *dev, uint8_t msg_class, uint8_t msg_id)
+{
+    if (dev == NULL)
+    {
+        return GPS_ERROR_WRONG_PARAM;
+    }
+
+    struct neo_m9n_data *dev_data = dev->data;
+
+    if (k_sem_take(&(dev_data->callbacks_sem), K_MSEC(1000)) != 0)
+    {
+        LOG_ERR("Cannot take semaphore");
+        return GPS_ERROR;
+    }
+
+    for (int i = 0; i < GPS_DRIVER_CALLBACKS_MAX_COUNT; i++)
+    {
+        if (dev_data->callback_list[i].class == msg_class && dev_data->callback_list[i].id == msg_id)
+        {
+            dev_data->callback_list[i].class = 0;
+            dev_data->callback_list[i].id = 0;
+            dev_data->callback_list[i].handler = NULL;
+            dev_data->callback_list[i].user_data = NULL;
+            dev_data->callback_list_count--;
+            k_sem_give(&(dev_data->callbacks_sem));
+            return GPS_OK;
+        }
+    }
+
+    k_sem_give(&(dev_data->callbacks_sem));
+
+    return GPS_ERROR;
+}
+
+void gps_list_callbacks(const struct device *dev)
+{
+    if (dev == NULL)
+    {
+        return;
+    }
+
+    struct neo_m9n_data *dev_data = dev->data;
+
+    if (k_sem_take(&(dev_data->callbacks_sem), K_MSEC(1000)) != 0)
+    {
+        LOG_ERR("Cannot take semaphore");
+        return;
+    }
+
+    LOG_INF("Callbacks list (%d items): ", dev_data->callback_list_count);
+
+    for (int i = 0; i < GPS_DRIVER_CALLBACKS_MAX_COUNT; i++)
+    {
+        if (dev_data->callback_list[i].class != 0 || dev_data->callback_list[i].id != 0)
+        {
+            LOG_INF("Class: 0x%02X, ID: 0x%02X", dev_data->callback_list[i].class, dev_data->callback_list[i].id);
+        }
+    }
+
+    k_sem_give(&(dev_data->callbacks_sem));
 }

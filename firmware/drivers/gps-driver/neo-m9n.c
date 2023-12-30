@@ -2,11 +2,22 @@
 #include "testowy.h"
 #include <zephyr/kernel.h>
 
+#include "gps-rx.h"
+
 LOG_MODULE_REGISTER(M9N);
 
+/**
+ * @brief Run wait_for_resp handler and clean it. Used only for timeout and error sending.
+ *
+ * @param dev
+ * @param gps_handler_code
+ * @param msg
+ */
 static void run_and_clean_wait_for_resp_handler(struct device *dev, uint8_t gps_handler_code, ubx_msg_t *msg)
 {
     struct neo_m9n_data *dev_data = dev->data;
+
+    k_sem_take(&(dev_data->callbacks_sem), K_FOREVER);
 
     uint8_t class = dev_data->wait_for_resp_callback.class;
     uint8_t id = dev_data->wait_for_resp_callback.id;
@@ -27,7 +38,10 @@ static void run_and_clean_wait_for_resp_handler(struct device *dev, uint8_t gps_
     dev_data->wait_for_resp_callback.handler = NULL;
     dev_data->wait_for_resp_callback.user_data = NULL;
 
-    return 0;
+    k_sem_give(&(dev_data->tx_wait_for_resp_sem));
+    k_sem_give(&(dev_data->callbacks_sem));
+
+    return;
 }
 
 void tx_thread(struct device *dev, void *p2, void *p3)
@@ -50,11 +64,15 @@ void tx_thread(struct device *dev, void *p2, void *p3)
             id = tx_queue_element.gps_payload[3];
         }
 
+        LOG_ERR("TEST - class 0x%X, id 0x%X", class, id);
+
         if (k_sem_take(&(dev_data->tx_wait_for_resp_sem), K_MSEC(GPS_SEND_MSG_MUTEX_TIMEOUT_MS)) != 0)
         {
             LOG_ERR("Previous msg not responded - timeout");
             run_and_clean_wait_for_resp_handler(dev, GPS_HANDLER_CODES_TIMEOUT, NULL);
         }
+
+        k_sem_take(&(dev_data->callbacks_sem), K_FOREVER);
 
         if (tx_queue_element.wait_for_response)
         {
@@ -70,6 +88,11 @@ void tx_thread(struct device *dev, void *p2, void *p3)
             dev_data->wait_for_resp_callback.class = 0;
             dev_data->wait_for_resp_callback.id = 0;
         }
+
+        LOG_ERR("TEST2 - class 0x%X, id 0x%X", dev_data->wait_for_resp_callback.class,
+                dev_data->wait_for_resp_callback.id);
+
+        k_sem_give(&(dev_data->callbacks_sem));
 
         int ret = neo_m9n_bus_write(dev, tx_queue_element.gps_payload, tx_queue_element.gps_payload_len);
 
@@ -101,6 +124,11 @@ void rx_thread(struct device *dev, void *p2, void *p3)
     {
         LOG_INF("RX");
         k_sleep(K_MSEC(1000));
+
+        if (0)
+        {
+            gps_handle_raw_rx(dev, NULL, 0); // TODO logic and test this function
+        }
     }
 }
 
@@ -234,6 +262,13 @@ static int neo_m9n_init(const struct device *dev)
 
     k_msgq_init(&(dev_data->tx_queue), dev_data->tx_queue_data, sizeof(gps_driver_tx_queue_element_t),
                 GPS_DRIVER_TX_QUEUE_SIZE);
+
+    ret = k_sem_init(&(dev_data->callbacks_sem), 1, 1);
+    if (ret)
+    {
+        LOG_ERR("Error while initializing semaphore %d", ret);
+        goto error;
+    }
 
 error:
     if (tx_thread_stack_area != NULL)

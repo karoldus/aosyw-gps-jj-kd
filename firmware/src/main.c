@@ -6,6 +6,8 @@
 
 #include "../drivers/gps-driver/neo-m9n.h"
 
+#include "../drivers/gps-driver/gps-rx.h"
+
 #define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
 LOG_MODULE_REGISTER(main);
 

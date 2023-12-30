@@ -73,6 +73,8 @@ struct neo_m9n_data
 
     neo_m9n_callback_t wait_for_resp_callback;
     neo_m9n_callback_t callback_list[GPS_DRIVER_CALLBACKS_MAX_COUNT];
+    struct k_sem callbacks_sem;
+    uint8_t callback_list_count;
 };
 
 struct neo_m9n_config

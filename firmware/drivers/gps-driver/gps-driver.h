@@ -8,15 +8,6 @@
 #include <errno.h>
 #include <zephyr/device.h>
 
-typedef enum
-{ // TODO: add more error codes
-    GPS_OK = 0,
-    GPS_ERROR = EPROTO,
-    GPS_ERROR_WRONG_PARAM = ENOTSUP,
-    GPS_ERROR_TIMEOUT = ETIME,
-    GPS_ERROR_NO_MEM = ENOSR,
-} gps_error_t;
-
 typedef struct
 {
     uint32_t key;
@@ -177,5 +168,40 @@ gps_error_t gps_set_enable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_
  */
 gps_error_t gps_set_disable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer,
                                         uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
+
+//============== HANDLERS ==============
+
+/**
+ * @brief Register callback for specific UBX message.
+ *
+ * @param dev
+ * @param msg_class Message class (e.g. UBX_NAV_CLASS) for which callback will be registered.
+ * @param msg_id Message id (e.g. UBX_NAV_PVT_ID) for which callback will be registered.
+ * @param handler Function to be called when message is received.
+ * @param user_data (optional) Data passed to handler. Can be NULL. User is responsible for allocating and freeing this
+ * @param one_time_flag True if callback should be automatically unregistered after first call.
+ * @return gps_error_t GPS_OK if callback was registered, GPS_ERROR_NO_MEM if callback list is full,
+ * GPS_ERROR_WRONG_PARAM, GPS_ERROR
+ */
+gps_error_t gps_register_callback(const struct device *dev, uint8_t msg_class, uint8_t msg_id, gps_handler_t handler,
+                                  void *user_data, uint8_t one_time_flag);
+
+/**
+ * @brief Unregister previously registered callback. If callback was not registered, nothing happens. If more than one
+ * callback is registered for given class and id pair, only one (first occurence) will be unregistered.
+ *
+ * @param dev
+ * @param msg_class Message class (e.g. UBX_NAV_CLASS) for which callback will be unregistered.
+ * @param msg_id Message id (e.g. UBX_NAV_PVT_ID) for which callback will be unregistered.
+ * @return gps_error_t
+ */
+gps_error_t gps_unregister_callback(const struct device *dev, uint8_t msg_class, uint8_t msg_id);
+
+/**
+ * @brief List all registered callbacks for given device. Class and id will be LOG_INFed for each registered callback.
+ *
+ * @param dev
+ */
+void gps_list_callbacks(const struct device *dev);
 
 #endif // GPS_DRIVER_H_
