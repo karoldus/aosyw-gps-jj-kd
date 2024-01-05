@@ -12,6 +12,28 @@ static inline int neo_m9n_bus_write(const struct device *dev, uint8_t *payload, 
     return cfg->bus_io->write(&cfg->bus, payload, payload_len);
 }
 
+static inline int neo_m9n_bus_read(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read)
+{
+    const struct neo_m9n_config *cfg = dev->config;
+
+    return cfg->bus_io->read(dev, buf, size, bytes_read);
+}
+
+int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read, k_timeout_t timeout)
+{
+    int ret;
+    struct neo_m9n_data *dev_data = dev->data;
+
+    ret = k_sem_take(&dev_data->rx_sem, timeout);
+
+    if(ret)
+    {
+        return ret;
+    }
+
+    return neo_m9n_bus_read(dev, buf, size, bytes_read);
+}
+
 static inline int neo_m9n_set_odr(const struct device *dev, neo_m9n_odr_t odr)
 {
     int ret;
@@ -35,6 +57,76 @@ static inline int neo_m9n_set_odr(const struct device *dev, neo_m9n_odr_t odr)
         break;
     }
 
+    return ret;
+}
+
+static inline int neo_m9n_set_pvt(const struct device *dev)
+{
+    int ret;
+
+    ret = neo_m9n_bus_write(dev, gps_config_default, sizeof(gps_config_default));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_GLL_off, sizeof(gps_config_GLL_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_GSA_off, sizeof(gps_config_GSA_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_GSV_off, sizeof(gps_config_GSV_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_GGA_off, sizeof(gps_config_GGA_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_VTG_off, sizeof(gps_config_VTG_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_RMC_off, sizeof(gps_config_RMC_off));
+    if (ret)
+    {
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    ret = neo_m9n_bus_write(dev, gps_config_UART1_NAV_PVT_on, sizeof(gps_config_UART1_NAV_PVT_on));
+    if (ret)
+    {
+        goto error;
+    }
+
+error:
     return ret;
 }
 
@@ -73,18 +165,33 @@ static int neo_m9n_init(const struct device *dev)
 {
     int ret;
 
-    const struct neo_m9n_data *dev_data = dev->data;
+    struct neo_m9n_data *dev_data = dev->data;
 
     const struct neo_m9n_config *dev_config = dev->config;
 
     LOG_INF("Initializing u-blox NEO M9N");
 
-    ret = dev_config->bus_io->init(&dev_config->bus);
+    k_sem_init(&dev_data->tx_sem, 0, 1);
+    k_sem_init(&dev_data->rx_sem, 0, 1);
+
+    ring_buf_init(&dev_data->rx_rb, sizeof(dev_data->iface_rb_buf),
+		      dev_data->iface_rb_buf);
+
+    ret = dev_config->bus_io->init(dev);
     if (ret)
     {
         LOG_ERR("Error while initializing bus");
         goto error;
     }
+
+    ret = neo_m9n_set_pvt(dev);
+    if (ret)
+    {
+        LOG_ERR("Error while setting PVT %d", ret);
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
 
     ret = neo_m9n_set_odr(dev, dev_data->odr);
     if (ret)
@@ -93,6 +200,7 @@ static int neo_m9n_init(const struct device *dev)
         goto error;
     }
 
+    LOG_INF("Initializing u-blox NEO M9N completed");
 error:
     return ret;
 }
@@ -104,11 +212,6 @@ error:
 #define NEO_M9N_BUS_CFG(inst)                                                                                          \
     COND_CODE_1(DT_INST_ON_BUS(inst, i2c), (NEO_M9N_CONFIG_I2C(inst)), (NEO_M9N_CONFIG_UART(inst)))
 
-void print_dbg(void)
-{
-    // LOG_INF("%d", DEFAULT_ODR);
-}
-
 #define NEO_M9N_DEFINE(inst)                                                                                           \
     static struct neo_m9n_data neo_m9n_data_##inst = {.odr = DT_INST_PROP(inst, output_rate)};                         \
     static const struct neo_m9n_config neo_m9n_config_##inst = {NEO_M9N_BUS_CFG(inst)};                                \
@@ -116,6 +219,6 @@ void print_dbg(void)
     PM_DEVICE_DT_INST_DEFINE(inst, pm_action);                                                                         \
                                                                                                                        \
     DEVICE_DT_INST_DEFINE(inst, neo_m9n_init, NULL, &neo_m9n_data_##inst, &neo_m9n_config_##inst, POST_KERNEL,         \
-                          CONFIG_NEO_M9N_INIT_PRIORITY, &api);
+                          NEO_M9N_INIT_PRIORITY, &api);
 
 DT_INST_FOREACH_STATUS_OKAY(NEO_M9N_DEFINE)
