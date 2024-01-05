@@ -105,8 +105,6 @@ typedef enum
     NEO_M9N_ODR_25HZ = 25
 } neo_m9n_odr_t;
 
-void test_api_func(void);
-
 int neo_m9n_bus_write(const struct device *dev, uint8_t *payload, uint16_t payload_len);
 
 typedef struct neo_m9n_api
