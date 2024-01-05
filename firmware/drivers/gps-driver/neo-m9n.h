@@ -5,19 +5,24 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/drivers/uart.h>
+#include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/pm/device.h>
+#include <zephyr/sys/ring_buffer.h>
+#include <zephyr/sys/sem.h>
 
 #include "gps-driver-context.h"
 
 #define DT_DRV_COMPAT u_blox_m9n
 
-#define CONFIG_NEO_M9N_INIT_PRIORITY 90
+#define NEO_M9N_INIT_PRIORITY 90
+
+#define NEO_M9N_RX_BUF_SIZE   1000
+#define NEO_M9N_RING_BUF_SIZE   5 * NEO_M9N_RX_BUF_SIZE
+#define NEO_M9N_UART_ASYNC_RX_TIMEOUT_US 5000
 
 #define NEO_M9N_BUS_UART DT_ANY_INST_ON_BUS_STATUS_OKAY(uart)
 #define NEO_M9N_BUS_I2C  DT_ANY_INST_ON_BUS_STATUS_OKAY(i2c)
-
-// #undef DT_DRV_COMPAT
 
 union neo_m9n_bus
 {
@@ -29,13 +34,15 @@ union neo_m9n_bus
 #endif
 };
 
-typedef int (*neo_m9n_bus_init_fn)(const union neo_m9n_bus *bus);
+typedef int (*neo_m9n_bus_init_fn)(const struct device *dev);
 typedef int (*neo_m9n_write_fn)(const union neo_m9n_bus *bus, uint8_t *payload, uint16_t payload_len);
+typedef int (*neo_m9n_read_fn)(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read);
 
 struct neo_m9n_bus_io
 {
     neo_m9n_bus_init_fn init;
     neo_m9n_write_fn write;
+    neo_m9n_read_fn read;
 };
 
 #if NEO_M9N_BUS_UART
@@ -75,6 +82,14 @@ struct neo_m9n_data
     neo_m9n_callback_t callback_list[GPS_DRIVER_CALLBACKS_MAX_COUNT];
     struct k_sem callbacks_sem;
     uint8_t callback_list_count;
+
+    uint8_t rx_buff[NEO_M9N_RX_BUF_SIZE];
+
+	uint8_t iface_rb_buf[NEO_M9N_RING_BUF_SIZE];
+	struct ring_buf rx_rb;
+
+    struct k_sem tx_sem;
+    struct k_sem rx_sem;
 };
 
 struct neo_m9n_config
@@ -98,6 +113,6 @@ typedef struct neo_m9n_api
 {
 };
 
-void print_dbg(void);
+int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read, k_timeout_t timeout);
 
 #endif /* __NEO_M9N_H__ */
