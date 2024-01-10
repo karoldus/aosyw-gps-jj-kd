@@ -167,21 +167,19 @@ int neo_m9n_get_packet(const struct device *dev, uint8_t *buf, size_t size, size
 {
     int ret;
     uint8_t temp_buf[size];
-    size_t temp_bytes_read;
+    size_t temp_bytes_read = 0;
     ret = neo_m9n_get_data(dev, temp_buf, size, &temp_bytes_read, timeout);
 
     if (ret)
     {
+        LOG_ERR("Error while getting data");
         goto error;
     }
 
-    LOG_INF("A");
     memcpy(buf, temp_buf, temp_bytes_read);
     *bytes_read = temp_bytes_read;
-    LOG_INF("B");
     if (temp_bytes_read < 6)
     {
-        LOG_INF("C");
         ret = neo_m9n_get_data(dev, temp_buf, size, &temp_bytes_read, timeout);
         if (ret)
         {
@@ -193,13 +191,13 @@ int neo_m9n_get_packet(const struct device *dev, uint8_t *buf, size_t size, size
             goto error;
         }
 
-        memcpy(buf[*bytes_read], temp_buf, temp_bytes_read);
+        memcpy((buf + *bytes_read), temp_buf, temp_bytes_read);
         *bytes_read += temp_bytes_read;
     }
-    LOG_INF("D");
+
     if (buf[0] != 0xb5 || buf[1] != 0x62)
     {
-        LOG_INF("E");
+        LOG_ERR("Wrong header");
         ret = -1;
         goto error;
     }
@@ -209,20 +207,19 @@ int neo_m9n_get_packet(const struct device *dev, uint8_t *buf, size_t size, size
 
     if ((temp_len + 8) > size)
     {
-        LOG_INF("F");
+        LOG_ERR("Msg length bigger than buffer");
         ret = -1;
         goto error;
     }
 
-    while ((temp_len + 8) < *bytes_read)
+    while ((temp_len + 8) > *bytes_read)
     {
-        LOG_INF("G");
         ret = neo_m9n_get_data(dev, temp_buf, size, &temp_bytes_read, timeout);
         if (ret)
         {
             goto error;
         }
-        memcpy(buf[*bytes_read], temp_buf, temp_bytes_read);
+        memcpy((buf + *bytes_read), temp_buf, temp_bytes_read);
         *bytes_read += temp_bytes_read;
     }
 
