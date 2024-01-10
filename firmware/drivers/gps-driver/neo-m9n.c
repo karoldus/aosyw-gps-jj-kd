@@ -166,9 +166,8 @@ int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t
 int neo_m9n_get_packet(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read, k_timeout_t timeout)
 {
     int ret;
-    uint8_t temp_buf[size];
     size_t temp_bytes_read = 0;
-    ret = neo_m9n_get_data(dev, temp_buf, size, &temp_bytes_read, timeout);
+    ret = neo_m9n_get_data(dev, buf, size, &temp_bytes_read, timeout);
 
     if (ret)
     {
@@ -176,22 +175,15 @@ int neo_m9n_get_packet(const struct device *dev, uint8_t *buf, size_t size, size
         goto error;
     }
 
-    memcpy(buf, temp_buf, temp_bytes_read);
     *bytes_read = temp_bytes_read;
     if (temp_bytes_read < 6)
     {
-        ret = neo_m9n_get_data(dev, temp_buf, size, &temp_bytes_read, timeout);
+        ret = neo_m9n_get_data(dev, (buf + *bytes_read), (size - *bytes_read), &temp_bytes_read, timeout);
         if (ret)
         {
             goto error;
         }
-        if (size - *bytes_read < temp_bytes_read)
-        {
-            ret = -1;
-            goto error;
-        }
 
-        memcpy((buf + *bytes_read), temp_buf, temp_bytes_read);
         *bytes_read += temp_bytes_read;
     }
 
@@ -214,12 +206,11 @@ int neo_m9n_get_packet(const struct device *dev, uint8_t *buf, size_t size, size
 
     while ((temp_len + 8) > *bytes_read)
     {
-        ret = neo_m9n_get_data(dev, temp_buf, size, &temp_bytes_read, timeout);
+        ret = neo_m9n_get_data(dev, (buf + *bytes_read), (size - *bytes_read), &temp_bytes_read, timeout);
         if (ret)
         {
             goto error;
         }
-        memcpy((buf + *bytes_read), temp_buf, temp_bytes_read);
         *bytes_read += temp_bytes_read;
     }
 
