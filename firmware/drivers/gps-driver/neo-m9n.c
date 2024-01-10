@@ -167,36 +167,39 @@ int neo_m9n_get_packet(const struct device *dev, uint8_t *buf, size_t size, size
 {
     int ret;
     uint8_t temp_buf[size];
-    size_t *temp_bytes_read;
-    ret = neo_m9n_get_data(dev, temp_buf, size, temp_bytes_read, timeout);
+    size_t temp_bytes_read;
+    ret = neo_m9n_get_data(dev, temp_buf, size, &temp_bytes_read, timeout);
 
     if (ret)
     {
         goto error;
     }
 
-    memcpy(buf, temp_buf, *temp_bytes_read);
-    *bytes_read = *temp_bytes_read;
-
-    if (*temp_bytes_read < 6)
+    LOG_INF("A");
+    memcpy(buf, temp_buf, temp_bytes_read);
+    *bytes_read = temp_bytes_read;
+    LOG_INF("B");
+    if (temp_bytes_read < 6)
     {
-        ret = neo_m9n_get_data(dev, temp_buf, size, temp_bytes_read, timeout);
+        LOG_INF("C");
+        ret = neo_m9n_get_data(dev, temp_buf, size, &temp_bytes_read, timeout);
         if (ret)
         {
             goto error;
         }
-        if(size - *bytes_read < *temp_bytes_read)
+        if (size - *bytes_read < temp_bytes_read)
         {
             ret = -1;
             goto error;
         }
 
-        memcpy(buf[*bytes_read], temp_buf, *temp_bytes_read);
-        *bytes_read += *temp_bytes_read;
+        memcpy(buf[*bytes_read], temp_buf, temp_bytes_read);
+        *bytes_read += temp_bytes_read;
     }
-
-    if(buf[0] != 0xb5 || buf[1] != 0x62)
+    LOG_INF("D");
+    if (buf[0] != 0xb5 || buf[1] != 0x62)
     {
+        LOG_INF("E");
         ret = -1;
         goto error;
     }
@@ -204,21 +207,23 @@ int neo_m9n_get_packet(const struct device *dev, uint8_t *buf, size_t size, size
     uint16_t temp_len;
     temp_len = buf[4] + (buf[5] << 8);
 
-    if((temp_len + 8) > size)
+    if ((temp_len + 8) > size)
     {
+        LOG_INF("F");
         ret = -1;
         goto error;
     }
 
-    while((temp_len + 8) < *bytes_read)
+    while ((temp_len + 8) < *bytes_read)
     {
-        ret = neo_m9n_get_data(dev, temp_buf, size, temp_bytes_read, timeout);
+        LOG_INF("G");
+        ret = neo_m9n_get_data(dev, temp_buf, size, &temp_bytes_read, timeout);
         if (ret)
         {
             goto error;
         }
-        memcpy(buf[*bytes_read], temp_buf, *temp_bytes_read);
-        *bytes_read += *temp_bytes_read;
+        memcpy(buf[*bytes_read], temp_buf, temp_bytes_read);
+        *bytes_read += temp_bytes_read;
     }
 
 error:

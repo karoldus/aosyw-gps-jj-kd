@@ -32,7 +32,7 @@ void test_thread(void *p1, void *p2, void *p3)
 
     while (1)
     {
-        neo_m9n_get_data(neo_m9n_gps, rx_buff_2, NEO_M9N_RX_BUF_SIZE, &bytes_read, K_FOREVER);
+        neo_m9n_get_packet(neo_m9n_gps, rx_buff_2, NEO_M9N_RX_BUF_SIZE, &bytes_read, K_FOREVER);
         for (int i = 0; i < bytes_read; i++)
         {
             sprintf(&str[i * 2], "%02x", rx_buff_2[i]);
