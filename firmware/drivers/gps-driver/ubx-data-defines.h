@@ -46,8 +46,8 @@ typedef struct __attribute__((__packed__))
     uint8_t flags;
     uint8_t flags2;
     uint8_t numSV;
-    int32_t lon;
-    int32_t lat;
+    int32_t lon; // 1e-7 deg
+    int32_t lat; // 1e-7 deg
     int32_t height;
     int32_t hMSL;
     uint32_t hAcc;
