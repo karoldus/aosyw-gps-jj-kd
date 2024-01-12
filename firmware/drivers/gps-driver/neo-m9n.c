@@ -64,8 +64,6 @@ void tx_thread(struct device *dev, void *p2, void *p3)
             id = tx_queue_element.gps_payload[3];
         }
 
-        LOG_ERR("TEST - class 0x%X, id 0x%X", class, id);
-
         if (k_sem_take(&(dev_data->tx_wait_for_resp_sem), K_MSEC(GPS_SEND_MSG_MUTEX_TIMEOUT_MS)) != 0)
         {
             LOG_ERR("Previous msg not responded - timeout");
@@ -88,9 +86,6 @@ void tx_thread(struct device *dev, void *p2, void *p3)
             dev_data->wait_for_resp_callback.class = 0;
             dev_data->wait_for_resp_callback.id = 0;
         }
-
-        LOG_ERR("TEST2 - class 0x%X, id 0x%X", dev_data->wait_for_resp_callback.class,
-                dev_data->wait_for_resp_callback.id);
 
         k_sem_give(&(dev_data->callbacks_sem));
 
@@ -120,15 +115,15 @@ void tx_thread(struct device *dev, void *p2, void *p3)
 
 void rx_thread(struct device *dev, void *p2, void *p3)
 {
+    static uint8_t rx_buff[NEO_M9N_RX_BUF_SIZE] = {0};
+    size_t bytes_read = 0;
+
     while (1)
     {
         LOG_INF("RX");
-        k_sleep(K_MSEC(1000));
-
-        if (0)
-        {
-            gps_handle_raw_rx(dev, NULL, 0); // TODO logic and test this function
-        }
+        neo_m9n_get_packet(dev, rx_buff, NEO_M9N_RX_BUF_SIZE, &bytes_read, K_FOREVER);
+        LOG_INF("GOT RX");
+        gps_handle_raw_rx(dev, rx_buff, bytes_read);
     }
 }
 
