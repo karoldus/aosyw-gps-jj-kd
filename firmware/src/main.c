@@ -1,5 +1,6 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <stdlib.h>
 
 #include "../drivers/gps-driver/gps-driver.h"
 
@@ -62,6 +63,8 @@ void nav_pvt_handler(const struct device *dev, uint8_t gps_code, uint8_t class, 
 int main(void)
 {
     k_sleep(K_MSEC(1000));
+
+    gps_set_cfg_disable_all_nmea(neo_m9n_gps, GPS_MEMORY_GET_LAYER_BBR, 1, NULL, NULL);
 
     gps_set_disable_ubx_nav_pvt(neo_m9n_gps, GPS_MEMORY_GET_LAYER_BBR, 1, disable_navpvt_handler_test, NULL);
 

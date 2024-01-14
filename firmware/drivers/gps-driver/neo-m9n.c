@@ -51,9 +51,11 @@ static void run_and_clean_wait_for_resp_handler(struct device *dev, uint8_t gps_
     return;
 }
 
-void tx_thread(struct device *dev, void *p2, void *p3)
+void tx_thread(void *p1, void *p2, void *p3)
 {
     LOG_INF("TX thread started");
+
+    struct device *dev = (struct device *)p1;
 
     struct neo_m9n_data *dev_data = dev->data;
     gps_driver_tx_queue_element_t tx_queue_element;
@@ -120,8 +122,10 @@ void tx_thread(struct device *dev, void *p2, void *p3)
     }
 }
 
-void rx_thread(struct device *dev, void *p2, void *p3)
+void rx_thread(void *p1, void *p2, void *p3)
 {
+    struct device *dev = (struct device *)p1;
+
     static uint8_t rx_buff[NEO_M9N_RX_BUF_SIZE] = {0};
     size_t bytes_read = 0;
 
@@ -134,8 +138,7 @@ void rx_thread(struct device *dev, void *p2, void *p3)
     }
 }
 
-static struct neo_m9n_api api = 
-{
+static struct neo_m9n_api api = {
     .send_generic = gps_send_generic,
     .set_config = gps_set_config,
     .get_config = gps_get_config,
@@ -163,7 +166,8 @@ static inline int neo_m9n_bus_read(const struct device *dev, uint8_t *buf, size_
     return cfg->bus_io->read(dev, buf, size, bytes_read);
 }
 
-static int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read, k_timeout_t timeout)
+static int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read,
+                            k_timeout_t timeout)
 {
     int ret;
     struct neo_m9n_data *dev_data = dev->data;
@@ -325,11 +329,11 @@ static int neo_m9n_init(const struct device *dev)
 
     k_tid_t tx_thread_pid =
         k_thread_create(&(dev_data->tx_thread_data), tx_thread_stack_area, GPS_DRIVER_TX_THREAD_STACK_SIZE, tx_thread,
-                        dev, (void *)34, NULL, GPS_DRIVER_TX_THREAD_PRIORITY, K_ESSENTIAL, K_NO_WAIT);
+                        (void *)dev, NULL, NULL, GPS_DRIVER_TX_THREAD_PRIORITY, K_ESSENTIAL, K_NO_WAIT);
 
     k_tid_t rx_thread_pid =
         k_thread_create(&(dev_data->rx_thread_data), rx_thread_stack_area, GPS_DRIVER_RX_THREAD_STACK_SIZE, rx_thread,
-                        dev, NULL, NULL, GPS_DRIVER_RX_THREAD_PRIORITY, K_ESSENTIAL, K_NO_WAIT);
+                        (void *)dev, NULL, NULL, GPS_DRIVER_RX_THREAD_PRIORITY, K_ESSENTIAL, K_NO_WAIT);
 
     if (tx_thread_pid == NULL || rx_thread_pid == NULL)
     {
@@ -349,6 +353,13 @@ static int neo_m9n_init(const struct device *dev)
         LOG_ERR("Error while initializing semaphore %d", ret);
         goto error;
     }
+
+    // gps_set_cfg_disable_all_nmea(dev, GPS_MEMORY_GET_LAYER_BBR, 0, NULL, NULL);
+
+    // gps_set_enable_ubx_nav_pvt(dev, GPS_MEMORY_GET_LAYER_BBR, 0, NULL, NULL);
+
+    // gps_set_cfg_rate(dev, 1000 / dev_data->odr, 1, UBX_CFG_TYPES_TIME_SYSTEM_NONE, GPS_MEMORY_GET_LAYER_BBR, 0, NULL,
+    //                  NULL);  TODO fix this!!!
 
     LOG_INF("Initializing u-blox NEO M9N completed");
 
