@@ -39,7 +39,7 @@ static void run_and_clean_wait_for_resp_handler(struct device *dev, uint8_t gps_
     }
     else
     {
-        LOG_INF("No handler for response"); // TODO: remove
+        LOG_INF("No handler for response");
     }
 
     dev_data->wait_for_resp_callback.handler = NULL;
@@ -138,6 +138,90 @@ void rx_thread(void *p1, void *p2, void *p3)
     }
 }
 
+extern gps_error_t _generate_checksum(uint8_t *payload, uint16_t payload_len, uint8_t *checksum_a, uint8_t *checksum_b);
+extern gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_item, uint8_t *out_payload,
+                                                      uint16_t *out_payload_len);
+
+static int _send_init_config(const struct device *dev, gps_config_item_t config[], uint8_t config_len)
+{
+    uint8_t *payload = malloc(config_len * MAX_CONFIG_ITEM_SIZE + 4); // 4 = 1 for version + 1 for layer + 2 reserved
+
+    if (payload == NULL)
+    {
+        return -1;
+    }
+
+    *payload = 0x00;                                                        // version
+    *(payload + 1) = (GPS_MEMORY_SET_LAYER_BBR | GPS_MEMORY_SET_LAYER_RAM); // layer
+    *(payload + 2) = 0x00;                                                  // reserved
+    *(payload + 3) = 0x00;                                                  // reserved
+
+    uint16_t payload_len = 4;
+
+    for (int i = 0; i < config_len; i++)
+    {
+        uint16_t payload_item_len = 0;
+        gps_error_t err =
+            _generate_payload_from_config_item(&config[i], (uint8_t *)(payload + payload_len), &payload_item_len);
+
+        if (err != GPS_OK)
+        {
+            free(payload);
+            return err;
+        }
+
+        payload_len += payload_item_len;
+    }
+
+    uint16_t uart_payload_len =
+        payload_len + 8; // 8 = 2 for preamble + 1 for class + 1 for id + 2 for length + 2 for checksum
+    uint8_t *uart_payload = malloc(uart_payload_len);
+
+    if (uart_payload == NULL)
+    {
+        free(payload);
+        return -1;
+    }
+
+    *(uart_payload) = UBX_PREAMBLE1;
+    *(uart_payload + 1) = UBX_PREAMBLE2;
+    *(uart_payload + 2) = (uint8_t)UBX_CFG_CLASS;
+    *(uart_payload + 3) = (uint8_t)UBX_CFG_VALSET_ID;
+    *(uart_payload + 4) = (uint8_t)(payload_len & 0xFF);
+    *(uart_payload + 5) = (uint8_t)((payload_len >> 8) & 0xFF);
+
+    memcpy(uart_payload + 6, payload, payload_len);
+
+    uint8_t checksum_a = 0;
+    uint8_t checksum_b = 0;
+
+    gps_error_t err = _generate_checksum(uart_payload, uart_payload_len - 2, &checksum_a, &checksum_b);
+
+    if (err != GPS_OK)
+    {
+        free(payload);
+        free(uart_payload);
+        return -1;
+    }
+
+    *(uart_payload + uart_payload_len - 2) = checksum_a;
+    *(uart_payload + uart_payload_len - 1) = checksum_b;
+
+    int ret = neo_m9n_bus_write(dev, uart_payload, uart_payload_len);
+
+    free(uart_payload);
+    free(payload);
+
+    if (ret != 0)
+    {
+        LOG_ERR("Error while sending msg to GPS");
+        return -1;
+    }
+
+    k_sleep(K_MSEC(10));
+    return 0;
+}
+
 static struct neo_m9n_api api = {
     .send_generic = gps_send_generic,
     .set_config = gps_set_config,
@@ -208,7 +292,7 @@ int neo_m9n_get_packet(const struct device *dev, uint8_t *buf, size_t size, size
 
     if (buf[0] != 0xb5 || buf[1] != 0x62)
     {
-        LOG_ERR("Wrong header");
+        LOG_ERR("Wrong header: %x %x", buf[0], buf[1]);
         ret = -1;
         goto error;
     }
@@ -290,22 +374,6 @@ static int neo_m9n_init(const struct device *dev)
         goto error;
     }
 
-    // ret = neo_m9n_set_pvt(dev);
-    // if (ret)
-    // {
-    //     LOG_ERR("Error while setting PVT %d", ret);
-    //     goto error;
-    // }
-
-    // k_sleep(K_MSEC(100));
-
-    // ret = neo_m9n_set_odr(dev, dev_data->odr);
-    // if (ret)
-    // {
-    //     LOG_ERR("Error while setting odr %d", ret);
-    //     goto error;
-    // }
-
     ret = k_sem_init(&(dev_data->tx_wait_for_resp_sem), 1, 1);
     if (ret)
     {
@@ -354,12 +422,67 @@ static int neo_m9n_init(const struct device *dev)
         goto error;
     }
 
-    // gps_set_cfg_disable_all_nmea(dev, GPS_MEMORY_GET_LAYER_BBR, 0, NULL, NULL);
+    // DISABLE ALL NMEA
+    const gps_config_item_t item_list[] = {
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GGA_I2C_U1, {0}},   {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GGA_SPI_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GGA_UART1_U1, {0}}, {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GGA_UART2_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GGA_USB_U1, {0}},   {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GLL_I2C_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GLL_SPI_U1, {0}},   {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GLL_UART1_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GLL_UART2_U1, {0}}, {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GLL_USB_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GSA_I2C_U1, {0}},   {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GSA_SPI_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GSA_UART1_U1, {0}}, {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GSA_UART2_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GSA_USB_U1, {0}},   {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GSV_I2C_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GSV_SPI_U1, {0}},   {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GSV_UART1_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GSV_UART2_U1, {0}}, {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_GSV_USB_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_RMC_I2C_U1, {0}},   {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_RMC_SPI_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_RMC_UART1_U1, {0}}, {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_RMC_UART2_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_RMC_USB_U1, {0}},   {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_VTG_I2C_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_VTG_SPI_U1, {0}},   {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_VTG_UART1_U1, {0}},
+        {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_VTG_UART2_U1, {0}}, {UBX_CFG_KEY_ID_MSGOUT_NMEA_ID_VTG_USB_U1, {0}},
+    };
 
-    // gps_set_enable_ubx_nav_pvt(dev, GPS_MEMORY_GET_LAYER_BBR, 0, NULL, NULL);
+    ret = _send_init_config(dev, (gps_config_item_t *)item_list, sizeof(item_list) / sizeof(gps_config_item_t));
 
-    // gps_set_cfg_rate(dev, 1000 / dev_data->odr, 1, UBX_CFG_TYPES_TIME_SYSTEM_NONE, GPS_MEMORY_GET_LAYER_BBR, 0, NULL,
-    //                  NULL);  TODO fix this!!!
+    if (ret != 0)
+    {
+        LOG_ERR("Error while sending init config disable all nmea");
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    // ENABLE NAV-PVT
+    const gps_config_item_t item_list2[] = {{UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_I2C_U1, {1}},
+                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_SPI_U1, {1}},
+                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_UART1_U1, {1}},
+                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_UART2_U1, {1}},
+                                            {UBX_CFG_KEY_ID_MSGOUT_UBX_NAV_PVT_USB_U1, {1}}};
+
+    ret = _send_init_config(dev, (gps_config_item_t *)item_list2, sizeof(item_list2) / sizeof(gps_config_item_t));
+
+    if (ret != 0)
+    {
+        LOG_ERR("Error while sending init config enable nav-pvt");
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
+
+    // SET RATE dev_data->odr
+
+    const gps_config_item_t item_list3[] = {{UBX_CFG_KEY_ID_RATE_MEAS_U2, {1000 / dev_data->odr}},
+                                            {UBX_CFG_KEY_ID_RATE_NAV_U2, {1}},
+                                            {UBX_CFG_KEY_ID_RATE_TIMEREF_E1, {UBX_CFG_TYPES_TIME_SYSTEM_NONE}}};
+
+    ret = _send_init_config(dev, (gps_config_item_t *)item_list3, sizeof(item_list3) / sizeof(gps_config_item_t));
+
+    if (ret != 0)
+    {
+        LOG_ERR("Error while sending init config set rate");
+        goto error;
+    }
+
+    k_sleep(K_MSEC(100));
 
     LOG_INF("Initializing u-blox NEO M9N completed");
 

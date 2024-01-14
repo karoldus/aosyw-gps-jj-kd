@@ -9,7 +9,7 @@
 #define GPS_SEND_MSG_MUTEX_TIMEOUT_MS  (3000U)
 
 typedef enum
-{ // TODO: add more error codes
+{
     GPS_OK = 0,
     GPS_ERROR = EPROTO,
     GPS_ERROR_WRONG_PARAM = ENOTSUP,

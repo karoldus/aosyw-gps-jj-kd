@@ -67,7 +67,7 @@ static gps_error_t gps_find_and_execute_handler(const struct device *dev, ubx_ms
         }
         else
         {
-            LOG_INF("No handler for response"); // TODO: remove
+            LOG_INF("No handler for response");
         }
 
         dev_data->wait_for_resp_callback.handler = NULL;
@@ -93,7 +93,7 @@ static gps_error_t gps_find_and_execute_handler(const struct device *dev, ubx_ms
             }
             else
             {
-                LOG_INF("No handler for response"); // TODO: remove
+                LOG_INF("No handler for response");
             }
 
             if (dev_data->callback_list[i].one_time)
@@ -255,8 +255,6 @@ void gps_handle_raw_rx(const struct device *dev, uint8_t *raw_payload, uint16_t 
 
     memcpy(payload, raw_payload + 6, payload_len_from_msg);
     msg.payload = payload;
-
-    // free(raw_payload); // TODO: check if this is correct
 
     gps_handle_received_msg(dev, &msg);
 }

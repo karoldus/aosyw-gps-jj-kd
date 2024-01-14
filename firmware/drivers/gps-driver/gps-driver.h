@@ -31,7 +31,7 @@ typedef struct
         uint32_t x4;
         uint64_t x8;
         uint8_t l;
-    } value; // TODO muszą być little-endian. Jak to sprawdzić? Może #define?
+    } value; // Must be little endian
 
 } gps_config_item_t;
 

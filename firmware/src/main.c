@@ -1,6 +1,6 @@
+#include <stdlib.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
-#include <stdlib.h>
 
 #include "../drivers/gps-driver/gps-driver.h"
 
@@ -60,11 +60,30 @@ void nav_pvt_handler(const struct device *dev, uint8_t gps_code, uint8_t class, 
     }
 }
 
+void set_rate_1000_handler(const struct device *dev, uint8_t gps_code, uint8_t class, uint8_t id, ubx_msg_t *msg,
+                           void *user_data)
+{
+    LOG_INF("set_rate_1000_handler: %d, %x, %x", gps_code, class, id);
+
+    if (msg != NULL)
+    {
+        if (msg->payload != NULL)
+        {
+            free(msg->payload);
+            msg->payload = NULL;
+        }
+    }
+
+    if (gps_code == GPS_HANDLER_CODES_TIMEOUT)
+    {
+        gps_set_cfg_rate(neo_m9n_gps, 1000, 1, UBX_CFG_TYPES_TIME_SYSTEM_NONE, GPS_MEMORY_GET_LAYER_BBR, 1,
+                         set_rate_1000_handler, NULL);
+    }
+}
+
 int main(void)
 {
     k_sleep(K_MSEC(1000));
-
-    gps_set_cfg_disable_all_nmea(neo_m9n_gps, GPS_MEMORY_GET_LAYER_BBR, 1, NULL, NULL);
 
     gps_set_disable_ubx_nav_pvt(neo_m9n_gps, GPS_MEMORY_GET_LAYER_BBR, 1, disable_navpvt_handler_test, NULL);
 
@@ -73,11 +92,12 @@ int main(void)
     gps_register_callback(neo_m9n_gps, UBX_NAV_CLASS, UBX_NAV_PVT_ID, nav_pvt_handler, NULL, 0);
     gps_set_enable_ubx_nav_pvt(neo_m9n_gps, GPS_MEMORY_GET_LAYER_BBR, 1, enable_navpvt_handler_test, NULL);
 
-    gps_set_cfg_rate(neo_m9n_gps, 40, 1, UBX_CFG_TYPES_TIME_SYSTEM_NONE, GPS_MEMORY_GET_LAYER_BBR, 1, NULL, NULL);
+    gps_set_cfg_rate(neo_m9n_gps, 100, 1, UBX_CFG_TYPES_TIME_SYSTEM_NONE, GPS_MEMORY_GET_LAYER_BBR, 1, NULL, NULL);
 
     k_sleep(K_MSEC(2000));
 
-    gps_set_cfg_rate(neo_m9n_gps, 1000, 1, UBX_CFG_TYPES_TIME_SYSTEM_NONE, GPS_MEMORY_GET_LAYER_BBR, 1, NULL, NULL);
+    gps_set_cfg_rate(neo_m9n_gps, 1000, 1, UBX_CFG_TYPES_TIME_SYSTEM_NONE, GPS_MEMORY_GET_LAYER_BBR, 1,
+                     set_rate_1000_handler, NULL);
 
     k_sleep(K_FOREVER);
 
