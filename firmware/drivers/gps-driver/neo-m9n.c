@@ -134,7 +134,8 @@ void rx_thread(struct device *dev, void *p2, void *p3)
     }
 }
 
-static struct neo_m9n_api api = {
+static struct neo_m9n_api api = 
+{
     .send_generic = gps_send_generic,
     .set_config = gps_set_config,
     .get_config = gps_get_config,
@@ -162,8 +163,7 @@ static inline int neo_m9n_bus_read(const struct device *dev, uint8_t *buf, size_
     return cfg->bus_io->read(dev, buf, size, bytes_read);
 }
 
-static int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read,
-                            k_timeout_t timeout)
+static int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read, k_timeout_t timeout)
 {
     int ret;
     struct neo_m9n_data *dev_data = dev->data;

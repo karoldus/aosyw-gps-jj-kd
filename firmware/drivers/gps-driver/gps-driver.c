@@ -24,14 +24,6 @@ LOG_MODULE_REGISTER(gps_driver);
 
 //================================= STATIC FUNCTIONS ==================================
 
-// TODO: delete?
-//  static uint8_t _is_little_endian()
-//  {
-//      int32_t x = 1;
-
-//     return (*((char *)(&x)) == 1);
-// }
-
 static gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_item, uint8_t *out_payload,
                                                       uint16_t *out_payload_len)
 {
@@ -49,7 +41,6 @@ static gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_
         return GPS_ERROR_WRONG_PARAM;
     }
 
-    // TODO: big/little endian ?
     memcpy(out_payload, &config_item->key, sizeof(config_item->key));
     memcpy(out_payload + sizeof(config_item->key), &config_item->value, number_of_bytes);
 
