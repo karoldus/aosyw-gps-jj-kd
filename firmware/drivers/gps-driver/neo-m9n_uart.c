@@ -22,7 +22,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
         break;
 
     case UART_RX_RDY:
-        LOG_INF("off: %d, len: %d ", evt->data.rx.offset, evt->data.rx.len);
+        // LOG_INF("off: %d, len: %d ", evt->data.rx.offset, evt->data.rx.len);
 
         written = ring_buf_put(&dev_data->rx_rb, evt->data.rx.buf + evt->data.rx.offset, evt->data.rx.len);
         if (written != evt->data.rx.len)

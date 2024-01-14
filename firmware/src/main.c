@@ -11,7 +11,7 @@ const struct device *neo_m9n_gps = DEVICE_DT_GET(DT_ALIAS(neo_m9n));
 void disable_navpvt_handler_test(const struct device *dev, uint8_t gps_code, uint8_t class, uint8_t id, ubx_msg_t *msg,
                                  void *user_data)
 {
-    LOG_ERR("disable_navpvt_handler_test: %d, %x, %x", gps_code, class, id);
+    LOG_INF("disable_navpvt_handler_test: %d, %x, %x", gps_code, class, id);
 
     if (msg != NULL)
     {
@@ -26,7 +26,7 @@ void disable_navpvt_handler_test(const struct device *dev, uint8_t gps_code, uin
 void enable_navpvt_handler_test(const struct device *dev, uint8_t gps_code, uint8_t class, uint8_t id, ubx_msg_t *msg,
                                 void *user_data)
 {
-    LOG_ERR("enable_navpvt_handler_test: %d, %x, %x", gps_code, class, id);
+    LOG_INF("enable_navpvt_handler_test: %d, %x, %x", gps_code, class, id);
 
     if (msg != NULL)
     {
@@ -41,12 +41,12 @@ void enable_navpvt_handler_test(const struct device *dev, uint8_t gps_code, uint
 void nav_pvt_handler(const struct device *dev, uint8_t gps_code, uint8_t class, uint8_t id, ubx_msg_t *msg,
                      void *user_data)
 {
-    LOG_ERR("nav_pvt_handler: %d, %x, %x", gps_code, class, id);
+    // LOG_INF("nav_pvt_handler: %d, %x, %x", gps_code, class, id);
 
     ubx_nav_pvt_t *pvt_msg = (ubx_nav_pvt_t *)msg->payload;
 
-    LOG_ERR("GPS time: %02d:%02d:%02d.%03d UTC", pvt_msg->hour, pvt_msg->min, pvt_msg->sec, pvt_msg->nano / 1000000);
-    LOG_ERR("GPS position: %d.%d, %d.%d", pvt_msg->lat / 10000000, pvt_msg->lat % 10000000, pvt_msg->lon / 10000000,
+    LOG_INF("GPS time: %02d:%02d:%02d.%03d UTC", pvt_msg->hour, pvt_msg->min, pvt_msg->sec, pvt_msg->nano / 1000000);
+    LOG_INF("GPS position: %d.%d, %d.%d", pvt_msg->lat / 10000000, pvt_msg->lat % 10000000, pvt_msg->lon / 10000000,
             pvt_msg->lon % 10000000);
 
     if (msg != NULL)

@@ -1,8 +1,15 @@
 #include "neo-m9n.h"
-#include "testowy.h"
 #include <zephyr/kernel.h>
 
 #include "gps-rx.h"
+
+#include "gps-driver.h"
+
+#define GPS_DRIVER_TX_THREAD_STACK_SIZE (1024U)
+#define GPS_DRIVER_TX_THREAD_PRIORITY   3 // TODO
+
+#define GPS_DRIVER_RX_THREAD_STACK_SIZE (4096) // TODO
+#define GPS_DRIVER_RX_THREAD_PRIORITY   3      // TODO
 
 LOG_MODULE_REGISTER(M9N);
 
@@ -120,14 +127,26 @@ void rx_thread(struct device *dev, void *p2, void *p3)
 
     while (1)
     {
-        LOG_INF("RX");
+        // LOG_INF("RX");
         neo_m9n_get_packet(dev, rx_buff, NEO_M9N_RX_BUF_SIZE, &bytes_read, K_FOREVER);
-        LOG_INF("GOT RX");
+        // LOG_INF("GOT RX");
         gps_handle_raw_rx(dev, rx_buff, bytes_read);
     }
 }
 
-static struct neo_m9n_api api;
+static struct neo_m9n_api api = {
+    .send_generic = gps_send_generic,
+    .set_config = gps_set_config,
+    .get_config = gps_get_config,
+    .del_config = gps_del_config,
+    .set_cfg_rate = gps_set_cfg_rate,
+    .set_cfg_disable_all_nmea = gps_set_cfg_disable_all_nmea,
+    .set_enable_ubx_nav_pvt = gps_set_enable_ubx_nav_pvt,
+    .set_disable_ubx_nav_pvt = gps_set_disable_ubx_nav_pvt,
+    .register_callback = gps_register_callback,
+    .unregister_callback = gps_unregister_callback,
+    .list_callbacks = gps_list_callbacks,
+};
 
 int neo_m9n_bus_write(const struct device *dev, uint8_t *payload, uint16_t payload_len)
 {
@@ -143,7 +162,8 @@ static inline int neo_m9n_bus_read(const struct device *dev, uint8_t *buf, size_
     return cfg->bus_io->read(dev, buf, size, bytes_read);
 }
 
-int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read, k_timeout_t timeout)
+static int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read,
+                            k_timeout_t timeout)
 {
     int ret;
     struct neo_m9n_data *dev_data = dev->data;
@@ -213,102 +233,6 @@ error:
     return ret;
 }
 
-static inline int neo_m9n_set_odr(const struct device *dev, neo_m9n_odr_t odr)
-{
-    int ret;
-
-    switch (odr)
-    {
-    case NEO_M9N_ODR_1HZ:
-        ret = neo_m9n_bus_write(dev, gps_config_1Hz, sizeof(gps_config_1Hz));
-        break;
-
-    case NEO_M9N_ODR_10HZ:
-        ret = -ENOTSUP;
-        break;
-
-    case NEO_M9N_ODR_25HZ:
-        ret = neo_m9n_bus_write(dev, gps_config_25Hz, sizeof(gps_config_25Hz));
-        break;
-
-    default:
-        ret = -ENOTSUP;
-        break;
-    }
-
-    return ret;
-}
-
-static inline int neo_m9n_set_pvt(const struct device *dev)
-{
-    int ret;
-
-    ret = neo_m9n_bus_write(dev, gps_config_default, sizeof(gps_config_default));
-    if (ret)
-    {
-        goto error;
-    }
-
-    k_sleep(K_MSEC(100));
-
-    ret = neo_m9n_bus_write(dev, gps_config_GLL_off, sizeof(gps_config_GLL_off));
-    if (ret)
-    {
-        goto error;
-    }
-
-    k_sleep(K_MSEC(100));
-
-    ret = neo_m9n_bus_write(dev, gps_config_GSA_off, sizeof(gps_config_GSA_off));
-    if (ret)
-    {
-        goto error;
-    }
-
-    k_sleep(K_MSEC(100));
-
-    ret = neo_m9n_bus_write(dev, gps_config_GSV_off, sizeof(gps_config_GSV_off));
-    if (ret)
-    {
-        goto error;
-    }
-
-    k_sleep(K_MSEC(100));
-
-    ret = neo_m9n_bus_write(dev, gps_config_GGA_off, sizeof(gps_config_GGA_off));
-    if (ret)
-    {
-        goto error;
-    }
-
-    k_sleep(K_MSEC(100));
-
-    ret = neo_m9n_bus_write(dev, gps_config_VTG_off, sizeof(gps_config_VTG_off));
-    if (ret)
-    {
-        goto error;
-    }
-
-    k_sleep(K_MSEC(100));
-
-    ret = neo_m9n_bus_write(dev, gps_config_RMC_off, sizeof(gps_config_RMC_off));
-    if (ret)
-    {
-        goto error;
-    }
-
-    k_sleep(K_MSEC(100));
-
-    ret = neo_m9n_bus_write(dev, gps_config_UART1_NAV_PVT_on, sizeof(gps_config_UART1_NAV_PVT_on));
-    if (ret)
-    {
-        goto error;
-    }
-
-error:
-    return ret;
-}
-
 #ifdef CONFIG_PM_DEVICE
 static int pm_action(const struct device *dev, enum pm_device_action action)
 {
@@ -362,21 +286,21 @@ static int neo_m9n_init(const struct device *dev)
         goto error;
     }
 
-    ret = neo_m9n_set_pvt(dev);
-    if (ret)
-    {
-        LOG_ERR("Error while setting PVT %d", ret);
-        goto error;
-    }
+    // ret = neo_m9n_set_pvt(dev);
+    // if (ret)
+    // {
+    //     LOG_ERR("Error while setting PVT %d", ret);
+    //     goto error;
+    // }
 
-    k_sleep(K_MSEC(100));
+    // k_sleep(K_MSEC(100));
 
-    ret = neo_m9n_set_odr(dev, dev_data->odr);
-    if (ret)
-    {
-        LOG_ERR("Error while setting odr %d", ret);
-        goto error;
-    }
+    // ret = neo_m9n_set_odr(dev, dev_data->odr);
+    // if (ret)
+    // {
+    //     LOG_ERR("Error while setting odr %d", ret);
+    //     goto error;
+    // }
 
     ret = k_sem_init(&(dev_data->tx_wait_for_resp_sem), 1, 1);
     if (ret)

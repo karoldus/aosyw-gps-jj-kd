@@ -107,11 +107,7 @@ typedef enum
 
 int neo_m9n_bus_write(const struct device *dev, uint8_t *payload, uint16_t payload_len);
 
-typedef struct neo_m9n_api
-{
-};
 
-int neo_m9n_get_data(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read, k_timeout_t timeout);
 
 int neo_m9n_get_packet(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read, k_timeout_t timeout);
 

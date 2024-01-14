@@ -204,4 +204,50 @@ gps_error_t gps_unregister_callback(const struct device *dev, uint8_t msg_class,
  */
 void gps_list_callbacks(const struct device *dev);
 
+typedef gps_error_t (*gps_send_generic_t)(const struct device *dev, uint8_t *payload, uint16_t payload_len,
+                                          uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
+typedef gps_error_t (*gps_set_config_t)(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer,
+                                        gps_config_item_t config[], uint8_t config_len, uint8_t wait_for_resp,
+                                        gps_handler_t handler, void *user_data);
+typedef gps_error_t (*gps_get_config_t)(const struct device *dev, ubx_cfg_memory_get_layer_t layer, uint32_t keys[],
+                                        uint8_t keys_len, uint8_t wait_for_resp, gps_handler_t handler,
+                                        void *user_data);
+typedef gps_error_t (*gps_del_config_t)(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer, uint32_t keys[],
+                                        uint8_t keys_len, uint8_t wait_for_resp, gps_handler_t handler,
+                                        void *user_data);
+typedef gps_error_t (*gps_set_cfg_rate_t)(const struct device *dev, uint16_t nominal_time_ms, uint16_t ratio,
+                                          ubxCfgTimeSystem_t time_system, ubx_cfg_memory_set_del_layer_t layer,
+                                          uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
+typedef gps_error_t (*gps_set_cfg_disable_all_nmea_t)(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer,
+                                                      uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
+typedef gps_error_t (*gps_set_enable_ubx_nav_pvt_t)(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer,
+                                                    uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
+typedef gps_error_t (*gps_set_disable_ubx_nav_pvt_t)(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer,
+                                                     uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
+typedef gps_error_t (*gps_register_callback_t)(const struct device *dev, uint8_t msg_class, uint8_t msg_id,
+                                               gps_handler_t handler, void *user_data, uint8_t one_time_flag);
+typedef gps_error_t (*gps_unregister_callback_t)(const struct device *dev, uint8_t msg_class, uint8_t msg_id);
+typedef void (*gps_list_callbacks_t)(const struct device *dev);
+
+typedef struct neo_m9n_api
+{
+    gps_send_generic_t send_generic;
+    gps_set_config_t set_config;
+    gps_get_config_t get_config;
+    gps_del_config_t del_config;
+    gps_set_cfg_rate_t set_cfg_rate;
+    gps_set_cfg_disable_all_nmea_t set_cfg_disable_all_nmea;
+    gps_set_enable_ubx_nav_pvt_t set_enable_ubx_nav_pvt;
+    gps_set_disable_ubx_nav_pvt_t set_disable_ubx_nav_pvt;
+    gps_register_callback_t register_callback;
+    gps_unregister_callback_t unregister_callback;
+    /**
+     * @brief List all registered callbacks for given device. Class and id will be LOG_INFed for each registered
+     * callback.
+     *
+     * @param dev
+     */
+    gps_list_callbacks_t list_callbacks;
+} neo_m9n_api_t;
+
 #endif // GPS_DRIVER_H_
