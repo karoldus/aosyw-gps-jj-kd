@@ -1,4 +1,3 @@
-target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/testowy.c)
 target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/neo-m9n.c)
 target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/neo-m9n_uart.c)
 target_sources(app PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/gps-driver.c)

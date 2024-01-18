@@ -36,7 +36,7 @@ typedef enum
 
 //============================ ENUMS ===========================================
 
-// // from https://github.com/u-blox/ubxlib/blob/master/gnss/api/u_gnss_type.h
+// from https://github.com/u-blox/ubxlib/blob/master/gnss/api/u_gnss_type.h
 
 /** The types of transport that the GNSS API can support.
  */

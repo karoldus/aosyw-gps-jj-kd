@@ -4,18 +4,12 @@
 #include "inttypes.h"
 #include <errno.h>
 
-#define GPS_DRIVER_TX_THREAD_STACK_SIZE (1024U)
-#define GPS_DRIVER_TX_THREAD_PRIORITY   3 // TODO
-
-#define GPS_DRIVER_RX_THREAD_STACK_SIZE (4096) // TODO
-#define GPS_DRIVER_RX_THREAD_PRIORITY   3      // TODO
-
 #define GPS_DRIVER_TX_QUEUE_SIZE       (10U)
 #define GPS_DRIVER_CALLBACKS_MAX_COUNT (10U)
 #define GPS_SEND_MSG_MUTEX_TIMEOUT_MS  (3000U)
 
 typedef enum
-{ // TODO: add more error codes
+{
     GPS_OK = 0,
     GPS_ERROR = EPROTO,
     GPS_ERROR_WRONG_PARAM = ENOTSUP,
@@ -48,14 +42,14 @@ typedef struct
 /**
  * @brief Format of user handler function that will be called when response from GPS is received.
  *
- * @param dev
+ * @param dev Pointer to device structure.
  * @param gps_handler_code One of GPS_HANDLER_CODES_*
  * @param class Class of received msg (can be 0 if no response received). If ACK or NACK received, class will be class
  * for which ACK/NACK was received (not ACK class).
  * @param id Id of received msg (can be 0 if no response received). If ACK or NACK received, id will be id for which
  * ACK/NACK was received (not ACK id).
  * @param resp_msg Can be NULL if no response received (timeout or error sending msg). If not NULL, it will be
- * automaticly freed after handler execution, but user must free payload.
+ * automaticly freed after handler execution, but USER MUST FREE PAYLOAD.
  * @param user_data Data passed by user during handler registration. Can be NULL. User is responsible for freeing this
  * memory.
  *
@@ -68,7 +62,9 @@ typedef void (*gps_handler_t)(const struct device *dev, uint8_t gps_handler_code
  */
 typedef struct
 {
-    uint8_t *gps_payload; // payload ready to send to GPS (including preamble, msg class, msg id, payload and checksum)
+    /* Dynamically allocated ptr to payload ready to send to GPS (including preamble, msg class, msg id, payload and
+     * checksum). Receiver is responsible for freeing this memory. Transmitter can't free this memory. */
+    uint8_t *gps_payload;
     uint16_t gps_payload_len;
     uint8_t wait_for_response;      // If 1, wait for response from GPS. If 0, don't wait for response.
     gps_handler_t response_handler; // Handler for response from GPS. Use only if wait_for_response is 1.
