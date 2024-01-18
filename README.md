@@ -1,8 +1,9 @@
 # AOSYW-23Z GNSS driver
+Jakub Jędrys, Karol Duszczyk
 
 ## Introduction
 
-Universal driver for u-blox modules supporting UBX protocol. Currently noithing is supported (work in progress).
+Universal driver for u-blox modules supporting UBX protocol.
 
 ## Configuration
 

@@ -11,6 +11,9 @@
 #define LOG_LEVEL CONFIG_LOG_DEFAULT_LEVEL
 LOG_MODULE_REGISTER(gps_driver);
 
+/**
+ * @brief Get number of value bytes based on key (for key-value config pair)
+ */
 #define _GET_NUMBER_OF_BYTES(key)                                                                                      \
     do                                                                                                                 \
     {                                                                                                                  \
@@ -54,8 +57,8 @@ gps_error_t _generate_payload_from_config_item(gps_config_item_t *config_item, u
  *
  * @param payload Payload of UBX message including preamble, class, id, length and payload
  * @param payload_len Length of payload including preamble, class, id, length and payload, but without checksum
- * @param checksum_a output
- * @param checksum_b output
+ * @param checksum_a output (first byte of checksum)
+ * @param checksum_b output (second byte of checksum)
  * @return gps_error_t
  */
 gps_error_t _generate_checksum(uint8_t *payload, uint16_t payload_len, uint8_t *checksum_a, uint8_t *checksum_b)
@@ -261,8 +264,6 @@ gps_error_t gps_get_config(const struct device *dev, ubx_cfg_memory_get_layer_t 
         memcpy(payload + 4 + i * sizeof(uint32_t), &keys[i], sizeof(uint32_t));
     }
 
-    // memcpy(payload, keys, keys_len * sizeof(uint32_t));
-
     msg.payload_len = keys_len * sizeof(uint32_t) + 4;
     msg.payload = payload;
 
@@ -309,8 +310,6 @@ gps_error_t gps_del_config(const struct device *dev, ubx_cfg_memory_set_del_laye
     {
         memcpy(payload + 4 + i * sizeof(uint32_t), &keys[i], sizeof(uint32_t));
     }
-
-    // memcpy(payload, keys, keys_len * sizeof(uint32_t));
 
     msg.payload_len = keys_len * sizeof(uint32_t) + 4;
     msg.payload = payload;

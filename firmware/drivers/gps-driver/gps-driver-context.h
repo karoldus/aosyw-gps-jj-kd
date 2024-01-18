@@ -42,14 +42,14 @@ typedef struct
 /**
  * @brief Format of user handler function that will be called when response from GPS is received.
  *
- * @param dev
+ * @param dev Pointer to device structure.
  * @param gps_handler_code One of GPS_HANDLER_CODES_*
  * @param class Class of received msg (can be 0 if no response received). If ACK or NACK received, class will be class
  * for which ACK/NACK was received (not ACK class).
  * @param id Id of received msg (can be 0 if no response received). If ACK or NACK received, id will be id for which
  * ACK/NACK was received (not ACK id).
  * @param resp_msg Can be NULL if no response received (timeout or error sending msg). If not NULL, it will be
- * automaticly freed after handler execution, but user must free payload.
+ * automaticly freed after handler execution, but USER MUST FREE PAYLOAD.
  * @param user_data Data passed by user during handler registration. Can be NULL. User is responsible for freeing this
  * memory.
  *

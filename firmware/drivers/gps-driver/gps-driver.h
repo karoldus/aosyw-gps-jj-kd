@@ -8,6 +8,9 @@
 #include <errno.h>
 #include <zephyr/device.h>
 
+/**
+ * @brief Configuration item from UBX documentation (key and value pair).
+ */
 typedef struct
 {
     uint32_t key;
@@ -23,31 +26,31 @@ typedef struct
         int64_t i8;
         float r4;
         double r8;
-        uint8_t e1;
-        uint16_t e2;
-        uint32_t e4;
-        uint8_t x1;
-        uint16_t x2;
-        uint32_t x4;
-        uint64_t x8;
-        uint8_t l;
-    } value; // Must be little endian
+        uint8_t e1;  // enum (1 byte)
+        uint16_t e2; // enum (2 bytes)
+        uint32_t e4; // enum (4 bytes)
+        uint8_t x1;  // bitfield (1 byte)
+        uint16_t x2; // bitfield (2 bytes)
+        uint32_t x4; // bitfield (4 bytes)
+        uint64_t x8; // bitfield (8 bytes)
+        uint8_t l;   // logic (1 = true, 0 = false)
+    } value;         // Must be little endian
 
 } gps_config_item_t;
 
-#define MAX_CONFIG_ITEMS     (64U)
-#define MAX_CONFIG_ITEM_SIZE (12U)
+#define MAX_CONFIG_ITEMS     (64U) // Max number of config items that can be sent in one message
+#define MAX_CONFIG_ITEM_SIZE (12U) // Max size of config item in bytes
 
 //============== GENERAL API ==============
 
 /**
  * @brief Send msg to GPS.
  *
- * @param dev
+ * @param dev GPS device.
  * @param payload Complete msg to send to GPS (including preamble, msg class, msg id, payload and checksum).
- * @param payload_len
+ * @param payload_len Length of payload.
  * @param wait_for_resp If true, wait for response from GPS.
- * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called. Only if wait_for_resp is 1.
  * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
@@ -64,12 +67,12 @@ gps_error_t gps_send_generic(const struct device *dev, uint8_t *payload, uint16_
  * List of configs: section 5.8 of
  * https://content.u-blox.com/sites/default/files/u-blox-M9-SPG-4.04_InterfaceDescription_UBX-21022436.pdf
  *
- * @param dev
+ * @param dev GPS device.
  * @param layer Layer to write the configuration to, can be more than one layer.
- * @param config
+ * @param config Array of config items to set (max size is MAX_CONFIG_ITEMS).
  * @param config_len number of config items, 0 < config_len <= MAX_CONFIG_ITEMS
  * @param wait_for_resp If true, wait for response from GPS.
- * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called. Only if wait_for_resp is 1.
  * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
@@ -81,12 +84,12 @@ gps_error_t gps_set_config(const struct device *dev, ubx_cfg_memory_set_del_laye
  * List of configs: section 5.8 of
  * https://content.u-blox.com/sites/default/files/u-blox-M9-SPG-4.04_InterfaceDescription_UBX-21022436.pdf
  *
- * @param dev
+ * @param dev GPS device.
  * @param layer Layer to read the configuration from. Only one layer can be read at a time.
- * @param keys
- * @param keys_len
+ * @param keys Array of config keys to get (max size is MAX_CONFIG_ITEMS).
+ * @param keys_len number of config keys, 0 < keys_len <= MAX_CONFIG_ITEMS
  * @param wait_for_resp If true, wait for response from GPS.
- * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called. Only if wait_for_resp is 1.
  * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
@@ -98,12 +101,12 @@ gps_error_t gps_get_config(const struct device *dev, ubx_cfg_memory_get_layer_t 
  * List of configs: section 5.8 of
  * https://content.u-blox.com/sites/default/files/u-blox-M9-SPG-4.04_InterfaceDescription_UBX-21022436.pdf
  *
- * @param dev
+ * @param dev GPS device.
  * @param layer Layer to delete the configuration from, can be more than one layer.
- * @param keys
- * @param keys_len
+ * @param keys Array of config keys to delete (max size is MAX_CONFIG_ITEMS).
+ * @param keys_len number of config keys, 0 < keys_len <= MAX_CONFIG_ITEMS
  * @param wait_for_resp If true, wait for response from GPS.
- * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called. Only if wait_for_resp is 1.
  * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
@@ -115,14 +118,14 @@ gps_error_t gps_del_config(const struct device *dev, ubx_cfg_memory_set_del_laye
 /**
  * @brief Set GPS rate configuration.
  *
- * @param dev
+ * @param dev GPS device.
  * @param nominal_time_ms Nominal time between GNSS measurements. The minimum value is 25. 0 to left unchanged.
  * @param ratio Ratio of number of measurements to number of navigation solutions. E.g. 5 means five measurements for
  * every navigation solution. The minimum value is 1. The maximum value is 127. 0 to left unchanged.
  * @param time_system Time system to which measurements are aligned. UBX_CFG_TYPES_TIME_SYSTEM_NONE to left unchanged.
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @param wait_for_resp If true, wait for response from GPS.
- * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called. Only if wait_for_resp is 1.
  * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
@@ -133,10 +136,10 @@ gps_error_t gps_set_cfg_rate(const struct device *dev, uint16_t nominal_time_ms,
 /**
  * @brief Disable all NMEA output messages (GGA, GLL, GSA, GSV, RMC, VTG).
  *
- * @param dev
+ * @param dev GPS device.
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @param wait_for_resp If true, wait for response from GPS.
- * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called. Only if wait_for_resp is 1.
  * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
@@ -146,10 +149,10 @@ gps_error_t gps_set_cfg_disable_all_nmea(const struct device *dev, ubx_cfg_memor
 /**
  * @brief Enable UBX-NAV-PVT messages
  *
- * @param dev
+ * @param dev GPS device.
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @param wait_for_resp If true, wait for response from GPS.
- * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called. Only if wait_for_resp is 1.
  * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
@@ -162,19 +165,19 @@ gps_error_t gps_set_enable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_
  * @param dev
  * @param layer Layer to write the configuration to, can be more than one layer.
  * @param wait_for_resp If true, wait for response from GPS.
- * @param handler Handler for response from GPS. If NULL, no handler will be called.
+ * @param handler Handler for response from GPS. If NULL, no handler will be called. Only if wait_for_resp is 1.
  * @param user_data User data passed to handler. Can be NULL.
  * @return gps_error_t
  */
 gps_error_t gps_set_disable_ubx_nav_pvt(const struct device *dev, ubx_cfg_memory_set_del_layer_t layer,
                                         uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
 
-//============== HANDLERS ==============
+//============== HANDLERS API ==============
 
 /**
  * @brief Register callback for specific UBX message.
  *
- * @param dev
+ * @param dev GPS device.
  * @param msg_class Message class (e.g. UBX_NAV_CLASS) for which callback will be registered.
  * @param msg_id Message id (e.g. UBX_NAV_PVT_ID) for which callback will be registered.
  * @param handler Function to be called when message is received.
@@ -190,7 +193,7 @@ gps_error_t gps_register_callback(const struct device *dev, uint8_t msg_class, u
  * @brief Unregister previously registered callback. If callback was not registered, nothing happens. If more than one
  * callback is registered for given class and id pair, only one (first occurence) will be unregistered.
  *
- * @param dev
+ * @param dev GPS device.
  * @param msg_class Message class (e.g. UBX_NAV_CLASS) for which callback will be unregistered.
  * @param msg_id Message id (e.g. UBX_NAV_PVT_ID) for which callback will be unregistered.
  * @return gps_error_t
@@ -200,9 +203,11 @@ gps_error_t gps_unregister_callback(const struct device *dev, uint8_t msg_class,
 /**
  * @brief List all registered callbacks for given device. Class and id will be LOG_INFed for each registered callback.
  *
- * @param dev
+ * @param dev GPS device.
  */
 void gps_list_callbacks(const struct device *dev);
+
+//============== API STRUCTURE ==============
 
 typedef gps_error_t (*gps_send_generic_t)(const struct device *dev, uint8_t *payload, uint16_t payload_len,
                                           uint8_t wait_for_resp, gps_handler_t handler, void *user_data);
