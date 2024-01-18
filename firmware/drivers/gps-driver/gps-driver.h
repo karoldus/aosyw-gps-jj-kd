@@ -47,7 +47,8 @@ typedef struct
  * @brief Send msg to GPS.
  *
  * @param dev GPS device.
- * @param payload Complete msg to send to GPS (including preamble, msg class, msg id, payload and checksum).
+ * @param payload Complete msg to send to GPS (including preamble, msg class, msg id, payload and checksum). User is
+ * responsible for free it.
  * @param payload_len Length of payload.
  * @param wait_for_resp If true, wait for response from GPS.
  * @param handler Handler for response from GPS. If NULL, no handler will be called. Only if wait_for_resp is 1.

@@ -144,8 +144,6 @@ static gps_error_t _generate_and_send_msg(const struct device *dev, const ubx_ms
         return GPS_ERROR;
     }
 
-    free(uart_payload);
-
     return GPS_OK;
 }
 
@@ -159,10 +157,19 @@ gps_error_t gps_send_generic(const struct device *dev, uint8_t *payload, uint16_
         return GPS_ERROR_WRONG_PARAM;
     }
 
+    uint8_t our_payload = malloc(payload_len);
+
+    if (our_payload == NULL)
+    {
+        return GPS_ERROR_NO_MEM;
+    }
+
+    memcpy(our_payload, payload, payload_len);
+
     struct neo_m9n_data *dev_data = dev->data;
 
     gps_driver_tx_queue_element_t element = {
-        .gps_payload = payload,
+        .gps_payload = our_payload,
         .gps_payload_len = payload_len,
         .wait_for_response = wait_for_resp,
         .response_handler = handler,

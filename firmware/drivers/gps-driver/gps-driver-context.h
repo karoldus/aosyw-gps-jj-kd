@@ -62,7 +62,9 @@ typedef void (*gps_handler_t)(const struct device *dev, uint8_t gps_handler_code
  */
 typedef struct
 {
-    uint8_t *gps_payload; // payload ready to send to GPS (including preamble, msg class, msg id, payload and checksum)
+    /* Dynamically allocated ptr to payload ready to send to GPS (including preamble, msg class, msg id, payload and
+     * checksum). Receiver is responsible for freeing this memory. Transmitter can't free this memory. */
+    uint8_t *gps_payload;
     uint16_t gps_payload_len;
     uint8_t wait_for_response;      // If 1, wait for response from GPS. If 0, don't wait for response.
     gps_handler_t response_handler; // Handler for response from GPS. Use only if wait_for_response is 1.

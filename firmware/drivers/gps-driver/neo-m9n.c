@@ -100,6 +100,9 @@ void tx_thread(void *p1, void *p2, void *p3)
 
         int ret = neo_m9n_bus_write(dev, tx_queue_element.gps_payload, tx_queue_element.gps_payload_len);
 
+        free(tx_queue_element.gps_payload);
+        tx_queue_element.gps_payload = NULL;
+
         if (ret != 0)
         {
             LOG_ERR("Error while sending msg to GPS");

@@ -71,7 +71,7 @@ struct neo_m9n_data
     k_thread_stack_t *rx_thread_stack;
     struct k_thread rx_thread_data;
 
-    // Queue for messages to send to GPS
+    // Queue for messages to send to GPS. Receiver is responsible for freeing payload. Transmitter can't free payload.
     struct k_msgq tx_queue;
     char tx_queue_data[GPS_DRIVER_TX_QUEUE_SIZE * sizeof(gps_driver_tx_queue_element_t)];
 

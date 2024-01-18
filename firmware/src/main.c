@@ -103,8 +103,8 @@ int main(void)
     gps_register_callback(neo_m9n_gps, UBX_NAV_CLASS, UBX_NAV_PVT_ID, nav_pvt_handler, NULL, 0);
     gps_set_enable_ubx_nav_pvt(neo_m9n_gps, GPS_MEMORY_GET_LAYER_BBR, 1, enable_navpvt_handler_test, NULL);
 
-    // Set rate of UBX-NAV-PVT msg to 100ms (10Hz) for 2 seconds, then set rate to 1000ms (1Hz)
-    gps_set_cfg_rate(neo_m9n_gps, 100, 1, UBX_CFG_TYPES_TIME_SYSTEM_NONE, GPS_MEMORY_GET_LAYER_BBR, 1, NULL, NULL);
+    // Set rate of UBX-NAV-PVT msg to 40ms (25Hz) for 2 seconds, then set rate to 1000ms (1Hz)
+    gps_set_cfg_rate(neo_m9n_gps, 40, 1, UBX_CFG_TYPES_TIME_SYSTEM_NONE, GPS_MEMORY_GET_LAYER_BBR, 1, NULL, NULL);
 
     k_sleep(K_MSEC(2000));
 
