@@ -152,7 +152,7 @@ static gps_error_t gps_handle_received_ack(const struct device *dev, ubx_msg_t *
 
     if (err != GPS_OK)
     {
-        LOG_ERR("No handler for class 0x%02X, id 0x%02X", ack_msg_class, ack_msg_id);
+        LOG_WRN("No handler for class 0x%02X, id 0x%02X", ack_msg_class, ack_msg_id);
 
         // free msg payload
         if (msg->payload != NULL)
@@ -175,7 +175,7 @@ static gps_error_t gps_handle_received_other_class(const struct device *dev, ubx
 
     if (err != GPS_OK)
     {
-        LOG_ERR("No handler for class 0x%02X, id 0x%02X", msg->msg_class, msg->msg_id);
+        LOG_WRN("No handler for class 0x%02X, id 0x%02X", msg->msg_class, msg->msg_id);
 
         // free msg payload
         if (msg->payload != NULL)
@@ -260,7 +260,7 @@ void gps_handle_raw_rx(const struct device *dev, uint8_t *raw_payload, uint16_t 
 
     if (raw_payload_len >= (all_payload_len + UBX_MIN_MSG_LEN))
     {
-        LOG_ERR("gps_handle_raw_rx: more than one msg in buffer. Raw len: %d", raw_payload_len);
+        LOG_WRN("gps_handle_raw_rx: more than one msg in buffer. Raw len: %d", raw_payload_len);
         gps_handle_raw_rx(dev, (uint8_t *)((void *)raw_payload + all_payload_len), (raw_payload_len - all_payload_len));
     }
 }
