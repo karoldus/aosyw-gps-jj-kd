@@ -8,7 +8,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
 {
     ARG_UNUSED(dev);
 
-    const struct device *device = user_data;
+    const struct device *device = (struct device *)user_data;
 
     struct neo_m9n_data *dev_data = device->data;
 
@@ -22,7 +22,7 @@ static void uart_cb(const struct device *dev, struct uart_event *evt, void *user
         break;
 
     case UART_RX_RDY:
-        LOG_INF("off: %d, len: %d ", evt->data.rx.offset, evt->data.rx.len);
+        // LOG_INF("off: %d, len: %d ", evt->data.rx.offset, evt->data.rx.len);
 
         written = ring_buf_put(&dev_data->rx_rb, evt->data.rx.buf + evt->data.rx.offset, evt->data.rx.len);
         if (written != evt->data.rx.len)
@@ -79,8 +79,7 @@ static int neo_m9n_uart_init(const struct device *dev)
         LOG_ERR("UART bus not ready");
         goto error;
     }
-
-    ret = uart_callback_set(bus->uart, uart_cb, dev);
+    ret = uart_callback_set(bus->uart, uart_cb, (void *)dev);
     if (ret)
     {
         LOG_ERR("Error while setting UART callback");
@@ -100,8 +99,6 @@ error:
 static int neo_m9n_read_uart(const struct device *dev, uint8_t *buf, size_t size, size_t *bytes_read)
 {
     struct neo_m9n_data *dev_data = dev->data;
-
-    struct modem_iface_uart_data *data;
 
     if (!dev || !dev_data)
     {
