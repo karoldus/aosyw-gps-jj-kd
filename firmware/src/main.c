@@ -16,7 +16,7 @@ LOG_MODULE_REGISTER(main);
 
 const struct device *neo_m9n_gps = DEVICE_DT_GET(DT_ALIAS(neo_m9n));
 
-/* Funkcja tworzona przez użytkownika do obsługi odpowiedzi z GPS */
+/* Funkcja tworzona przez użytkownika do obsługi odpowiedzi z GPS - typ zgodny z gps_handler_t */
 void disable_navpvt_handler_test(const struct device *dev, uint8_t gps_code, uint8_t class, uint8_t id, ubx_msg_t *msg,
                                  void *user_data)
 {
@@ -32,7 +32,7 @@ void disable_navpvt_handler_test(const struct device *dev, uint8_t gps_code, uin
     }
 }
 
-/* Funkcja tworzona przez użytkownika do obsługi odpowiedzi z GPS */
+/* Funkcja tworzona przez użytkownika do obsługi odpowiedzi z GPS - typ zgodny z gps_handler_t */
 void enable_navpvt_handler_test(const struct device *dev, uint8_t gps_code, uint8_t class, uint8_t id, ubx_msg_t *msg,
                                 void *user_data)
 {
@@ -48,7 +48,7 @@ void enable_navpvt_handler_test(const struct device *dev, uint8_t gps_code, uint
     }
 }
 
-/* Funkcja tworzona przez użytkownika do obsługi odpowiedzi z GPS */
+/* Funkcja tworzona przez użytkownika do obsługi odpowiedzi z GPS - typ zgodny z gps_handler_t */
 void nav_pvt_handler(const struct device *dev, uint8_t gps_code, uint8_t class, uint8_t id, ubx_msg_t *msg,
                      void *user_data)
 {
@@ -68,7 +68,7 @@ void nav_pvt_handler(const struct device *dev, uint8_t gps_code, uint8_t class, 
     }
 }
 
-/* Funkcja tworzona przez użytkownika do obsługi odpowiedzi z GPS */
+/* Funkcja tworzona przez użytkownika do obsługi odpowiedzi z GPS - typ zgodny z gps_handler_t */
 void set_rate_1000_handler(const struct device *dev, uint8_t gps_code, uint8_t class, uint8_t id, ubx_msg_t *msg,
                            void *user_data)
 {

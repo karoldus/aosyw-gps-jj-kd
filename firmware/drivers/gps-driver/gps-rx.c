@@ -106,7 +106,7 @@ static gps_error_t gps_find_and_execute_handler(const struct device *dev, ubx_ms
             }
 
             k_sem_give(&(dev_data->callbacks_sem));
-            return GPS_OK; // TODO: remove if we want to call all handlers and make signal flag
+            return GPS_OK; // remove if you want to call all handlers and make signal flag
         }
     }
 
