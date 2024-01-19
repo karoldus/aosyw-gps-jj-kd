@@ -5,11 +5,11 @@
 
 #include "gps-driver.h"
 
-#define GPS_DRIVER_TX_THREAD_STACK_SIZE (1024U)
-#define GPS_DRIVER_TX_THREAD_PRIORITY   3 // TODO
+#define GPS_DRIVER_TX_THREAD_STACK_SIZE (1024U) // TODO in the future: add to kconfig
+#define GPS_DRIVER_TX_THREAD_PRIORITY   3       // TODO in the future: add to kconfig
 
-#define GPS_DRIVER_RX_THREAD_STACK_SIZE (4096) // TODO
-#define GPS_DRIVER_RX_THREAD_PRIORITY   3      // TODO
+#define GPS_DRIVER_RX_THREAD_STACK_SIZE (4096) // TODO in the future: add to kconfig
+#define GPS_DRIVER_RX_THREAD_PRIORITY   3      // TODO in the future: add to kconfig
 
 LOG_MODULE_REGISTER(M9N);
 
@@ -134,9 +134,7 @@ void rx_thread(void *p1, void *p2, void *p3)
 
     while (1)
     {
-        // LOG_INF("RX");
         neo_m9n_get_packet(dev, rx_buff, NEO_M9N_RX_BUF_SIZE, &bytes_read, K_FOREVER);
-        // LOG_INF("GOT RX");
         gps_handle_raw_rx(dev, rx_buff, bytes_read);
     }
 }
