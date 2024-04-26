@@ -487,14 +487,18 @@ static int neo_m9n_init(const struct device *dev)
 
     LOG_INF("Initializing u-blox NEO M9N completed");
 
+    return 0;
+
 error:
     if (tx_thread_stack_area != NULL)
     {
         k_free(tx_thread_stack_area);
+        tx_thread_stack_area = NULL;
     }
     if (rx_thread_stack_area != NULL)
     {
         k_free(rx_thread_stack_area);
+        rx_thread_stack_area = NULL;
     }
     return ret;
 }
